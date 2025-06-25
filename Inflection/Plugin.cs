@@ -127,20 +127,20 @@ public sealed class Plugin : IDalamudPlugin
             // We check for commands which can be either "/" or "the autotranslate moji and /"
             if (messageDecoded.StartsWith("/") || messageDecoded.StartsWith(" /"))
             {
-                bool isChatChannelAlias = chataliasValidation.IsMatch(messageDecoded);
+                var chatChannelAlias = chataliasValidation.Match(messageDecoded);
 
-                matchedCommand = channelaliases.AsQueryable()
-                    .FirstOrDefault(prefix => messageDecoded.StartsWith(prefix,
-                                    StringComparison.OrdinalIgnoreCase));
                 // This means its not a chat channel command and just a normal command, so return original.
-                if (!isChatChannelAlias)
+                if (!chatChannelAlias.Success)
                 {
                     Log.Debug($"Ignoring {messageDecoded} as it failed the channel regex");
                     return ProcessChatInputHook.Original(uiModule, message, a3);
                 }
+                matchedCommand = channelaliases.AsQueryable()
+                    .FirstOrDefault(prefix => chatChannelAlias.Value.Equals(prefix,
+                                    StringComparison.OrdinalIgnoreCase));
                 if (matchedCommand.IsNullOrEmpty())
                 {
-                    Log.Debug($"Ignoring {messageDecoded} as it is not in the channel list");
+                    Log.Debug($"Ignoring {messageDecoded} as the command portion {chatChannelAlias.Value} it is not in the channel list");
                     return ProcessChatInputHook.Original(uiModule, message, a3);
                 }
 

@@ -150,9 +150,8 @@ public class MainWindow : Window, IDisposable
                 if (ImGui.Selectable(plugin.Configuration.Profiles[i].Label, i == current))
                 {
                     var id = plugin.Configuration.Profiles[i].Id;
-                    plugin.Configuration.SetActiveProfile(id);
+                    plugin.SetActiveProfile(id);
                     current = plugin.Configuration.ActiveProfileIndex;
-                    plugin.Configuration.Save();
                 }
             }
             ImGui.EndCombo();

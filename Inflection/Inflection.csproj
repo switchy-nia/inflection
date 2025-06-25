@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Dalamud.NET.Sdk/12.0.2">
   <PropertyGroup>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
     <Version>0.0.1.0</Version>
     <Description>Aiko's Inflection</Description>
     <PackageProjectUrl>https://github.com/switchy-nia/aikos-inflection</PackageProjectUrl>

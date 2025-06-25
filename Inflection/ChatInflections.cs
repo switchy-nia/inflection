@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Serilog;
+// using Serilog;
 
 namespace Inflection
 {
@@ -13,48 +13,48 @@ namespace Inflection
         const string WORD_REGEX = @"^(\W*)([\w\W\-\']*?)(\W*)$";
         // This emoji should support the following basic text emojis
         const string EMOJI_REGEX = @"^[:;cDxX><\-\,)CP][:;><\-3)CWwdpP]*[:;cDxX><\-\,3)CWwdpP]$";
-
-        Configuration configuration;
+        Profile profile;
         Regex sentence_regex;
         Regex word_regex;
         Regex emoji_regex;
         // Regex compliance_regex;
 
-        public Inflections(Configuration config)
+        public Inflections(Profile new_profile)
         {
-            configuration = config;
+            profile = new_profile;
             sentence_regex = new Regex(SENTENCE_REGEX);
             word_regex = new Regex(WORD_REGEX);
             emoji_regex = new Regex(EMOJI_REGEX);
-            // compliance_regex = new Regex(configuration.CurrentProfile.CompelledSpeech);
         }
+
         public bool SetToInflect()
         {
             return
-                configuration.ActiveProfile.CompelledSpeechEnabled ||
-                configuration.ActiveProfile.TicksEnabled ||
-                configuration.ActiveProfile.PronounCorrectionEnabled ||
-                configuration.ActiveProfile.StutterEnabled ||
-                configuration.ActiveProfile.SentenceStartEnabled ||
-                configuration.ActiveProfile.SentenceEndingEnabled;
+                profile.CompelledSpeechEnabled ||
+                profile.TicksEnabled ||
+                profile.PronounCorrectionEnabled ||
+                profile.StutterEnabled ||
+                profile.SentenceStartEnabled ||
+                profile.SentenceEndingEnabled;
         }
         public string Speak(String input)
         {
-            Log.Debug($"Speak {input} - Start");
+            //Log.Debug($"Speak {input} - Start");
 
             StringBuilder output = new StringBuilder();
             Random rand = new Random();
 
             List<string> words = input.Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
-            int ticks = (int)Math.Ceiling((double)words.Count * configuration.ActiveProfile.TickMaxPortionOfSpeech);
-            bool to_replace = true;
-            Log.Debug($"Looping over words with {words.Count}");
+            int ticks = (int)Math.Ceiling((double)words.Count * profile.TickMaxPortionOfSpeech);
+            bool motion_active = false;
+            bool ooc_active = false;
+            //Log.Debug($"Looping over words with {words.Count}");
             for (int i = 0; i < words.Count; i++)
             {
                 string full_word = words[i];
                 if (isEmoji(full_word))
                 {
-                    Log.Debug($"{full_word} is an emoji, skipping");
+                    //Log.Debug($"{full_word} is an emoji, skipping");
                     output.Append(full_word);
                     output.Append(' ');
                     continue;
@@ -64,24 +64,29 @@ namespace Inflection
                 string processed_postfix = "";
                 if (prefix != "")
                 {
-                    if (prefix.Contains('*'))
-                        to_replace = false;
+                    if (!motion_active && prefix.Contains('*'))
+                        motion_active = true;
+                    if (!ooc_active && prefix.Contains('('))
+                        ooc_active = true;
                     output.Append(prefix);
                 }
 
-                if (to_replace)
+                // In if we are currently handling OOC or emote messages, we append and skip processing.
+                if (motion_active || ooc_active)
                 {
-                    output.Append(ProcessWord(rand, word, i, words.Count, ref ticks, ref processed_postfix));
+                    output.Append(word);
                 }
                 else
                 {
-                    output.Append(word);
+                    output.Append(ProcessWord(rand, word, i, words.Count, ref ticks, ref processed_postfix));
                 }
 
                 if (postfix != "")
                 {
-                    if (postfix.Contains('*'))
-                        to_replace = true;
+                    if (motion_active && postfix.Contains('*'))
+                        motion_active = false;
+                    if (ooc_active && postfix.Contains(")"))
+                        ooc_active = false;
                     output.Append(postfix);
                 }
                 else if (processed_postfix != "")
@@ -93,16 +98,16 @@ namespace Inflection
             }
 
             var final = output.ToString();
-            if (configuration.ActiveProfile.SentenceStartEnabled)
+            if (profile.SentenceStartEnabled)
             {
                 final = SentenceStart(rand, final);
             }
 
-            if (configuration.ActiveProfile.SentenceEndingEnabled)
+            if (profile.SentenceEndingEnabled)
             {
                 final = SentenceEnding(rand, final);
             }
-            return final;
+            return final.Trim();
         }
 
         private bool isEmoji(string full_word)
@@ -121,7 +126,8 @@ namespace Inflection
             var prefix = captures[1].ToString();
             var word = captures[2].ToString();
             var postfix = captures[3].ToString();
-            switch (configuration.ActiveProfile.VoiceType)
+            //Plugin.Log.Debug($"handlePunctuation: {full_word} ({prefix})({word})({postfix})");
+            switch (profile.VoiceType)
             {
 
                 case VoiceVolume.Small:
@@ -130,15 +136,15 @@ namespace Inflection
                     prefix = prefix.Replace("?", "...");
                     postfix = postfix.Replace(".", "...");
                     postfix = postfix.Replace("!", "..!");
-                    postfix = prefix.Replace("?", "..?");
+                    postfix = postfix.Replace("?", "..?");
                     break;
                 case VoiceVolume.Big:
-                    prefix = prefix.Replace(".", "!");
                     prefix = prefix.Replace("!", "!!!");
                     prefix = prefix.Replace("?", "!?");
-                    postfix = postfix.Replace(".", "!");
+                    prefix = prefix.Replace(".", "!");
                     postfix = postfix.Replace("!", "!!");
-                    postfix = prefix.Replace("?", "!?");
+                    postfix = postfix.Replace("?", "!?");
+                    postfix = postfix.Replace(".", "!");
                     break;
             }
             return (prefix, word, postfix);
@@ -149,7 +155,7 @@ namespace Inflection
         {
             // By default it will be empty
             postfix_punctuation = "";
-            switch (configuration.ActiveProfile.VoiceType)
+            switch (profile.VoiceType)
             {
                 case VoiceVolume.Small:
                     word = word.ToLower();
@@ -161,45 +167,45 @@ namespace Inflection
 
 
             // Forced speech trumps all other speech and returns immediately, no further processing required.
-            if (configuration.ActiveProfile.CompelledSpeechEnabled)
+            if (profile.CompelledSpeechEnabled)
             {
-                Log.Debug($"Process {word} using forced speech and early returning");
-                int index = rand.Next(configuration.ActiveProfile.CompelledSpeechWords.Count);
-                return configuration.ActiveProfile.CompelledSpeechWords.ElementAt(index);
+                //Log.Debug($"Process {word} using forced speech and early returning");
+                int index = rand.Next(profile.CompelledSpeechWords.Count);
+                return profile.CompelledSpeechWords.ElementAt(index);
             }
 
             // If this is found in a pronouns list, change it.
-            if (configuration.ActiveProfile.PronounCorrectionEnabled)
+            if (profile.PronounCorrectionEnabled)
             {
                 var key = word.ToLower();
-                if (configuration.ActiveProfile.PronounsReplacements.ContainsKey(key))
+                if (profile.PronounsReplacements.ContainsKey(key))
                 {
-                    Log.Debug($"Process {word} using forced pronouns");
-                    word = configuration.ActiveProfile.PronounsReplacements[key];
+                    //Log.Debug($"Process {word} using forced pronouns");
+                    word = profile.PronounsReplacements[key];
                 }
             }
 
             // Roll for stuttering. TODO: Make configurable.
-            if (configuration.ActiveProfile.StutterEnabled && rand.Next(100) < configuration.ActiveProfile.StutterChance)
+            if (profile.StutterEnabled && rand.Next(100) < profile.StutterChance)
             {
-                Log.Debug($"Process {word} and making it stutter");
+                //Log.Debug($"Process {word} and making it stutter");
                 string stutter = "";
-                int max_stutters = rand.Next(configuration.ActiveProfile.MaxStutterSeverity);
+                int max_stutters = rand.Next(profile.MaxStutterSeverity);
                 for (int i = 0; i < 1 + max_stutters; i++)
                 {
                     stutter += word.First() + "-";
                 }
                 // Randomize it with a slightly more drammatic stutter
-                rand.Next(configuration.ActiveProfile.MaxStutterSeverity);
+                rand.Next(profile.MaxStutterSeverity);
                 word = stutter + word;
             }
 
             // Finally if there is an utterance required, add it.
             // The number of ticks here is to respect the maximum portion of a sentence
             // (to prevent RNG from making people have a spasm of utterances unless they want to.)
-            if (configuration.ActiveProfile.TicksEnabled && word_index <= total_words && ticks > 0)
+            if (profile.TicksEnabled && word_index <= total_words && ticks > 0)
             {
-                Log.Debug($"Process {word} verbal ticks");
+                //Log.Debug($"Process {word} verbal ticks");
 
                 // Simple bias to try to ensure that you are twice as likely to have something occur near the end as the beginning
                 // 1 / 10 = much lower chance to roll sufficiently
@@ -209,24 +215,24 @@ namespace Inflection
                 var bias = total_words / (1 + word_index);
                 var roll = rand.NextDouble() * bias;
 
-                if (configuration.ActiveProfile.Ticks.Count == 0)
+                if (profile.Ticks.Count == 0)
                 {
-                    Log.Debug($"No verbal ticks found, this should not be possible to set, so there is an error in your configuration.CurrentProfile.");
+                    //Log.Debug($"No verbal ticks found, this should not be possible to set, so there is an error in your configuration.CurrentProfile.");
                 }
-                else if (roll < configuration.ActiveProfile.TickChance)
+                else if (roll < profile.TickChance)
                 {
                     ticks -= 1;
-                    int index = rand.Next(configuration.ActiveProfile.Ticks.Count);
-                    string tick = configuration.ActiveProfile.Ticks.ElementAt(index);
+                    int index = rand.Next(profile.Ticks.Count);
+                    string tick = profile.Ticks.ElementAt(index);
                     word = word + ", " + tick;
                     postfix_punctuation = ",";
                 }
             }
 
-            return word;
+            return word.Trim();
         }
 
-        private string Pronouns(string input)
+        private string Pronouns(Profile profile, string input)
         {
             StringBuilder output = new StringBuilder();
 
@@ -240,9 +246,9 @@ namespace Inflection
                 (string pre, string word, string post) = handlePunctuation(full_word);
                 output.Append(pre);
 
-                if (configuration.ActiveProfile.PronounsReplacements.ContainsKey(word))
+                if (profile.PronounsReplacements.ContainsKey(word))
                 {
-                    output.Append(configuration.ActiveProfile.PronounsReplacements[word]);
+                    output.Append(profile.PronounsReplacements[word]);
                 }
                 else
                 {
@@ -257,10 +263,10 @@ namespace Inflection
 
         private string SentenceStart(Random rand, string input)
         {
-            if (configuration.ActiveProfile.SentenceStartEnabled)
+            if (profile.SentenceStartEnabled)
             {
-                int index = rand.Next(configuration.ActiveProfile.SentenceStarts.Count);
-                return configuration.ActiveProfile.SentenceStarts.ElementAt(index) + input;
+                int index = rand.Next(profile.SentenceStarts.Count);
+                return profile.SentenceStarts.ElementAt(index) + input;
             }
             else
             {
@@ -270,10 +276,10 @@ namespace Inflection
 
         private string SentenceEnding(Random rand, string input)
         {
-            if (configuration.ActiveProfile.SentenceEndingEnabled)
+            if (profile.SentenceEndingEnabled)
             {
-                int index = rand.Next(configuration.ActiveProfile.SentenceEndings.Count);
-                return input + configuration.ActiveProfile.SentenceEndings.ElementAt(index);
+                int index = rand.Next(profile.SentenceEndings.Count);
+                return input + profile.SentenceEndings.ElementAt(index);
             }
             else
             {

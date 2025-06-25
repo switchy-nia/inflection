@@ -70,7 +70,7 @@ public sealed class Plugin : IDalamudPlugin
 
         // Adds another button that is doing the same but for the main ui of the plugin
         // PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
-        speech = new Inflection.Inflections(Configuration);
+        speech = new Inflection.Inflections(Configuration.ActiveProfile);
 
         InteropProvider.InitializeFromAttributes(this);
         ProcessChatInputHook.Enable();
@@ -80,6 +80,12 @@ public sealed class Plugin : IDalamudPlugin
         Log.Information($"Inflection started successfully");
     }
 
+    public void SetActiveProfile(Guid guid)
+    {
+        Configuration.SetActiveProfile(guid);
+        speech = new Inflections(Configuration.ActiveProfile);
+        Configuration.Save();
+    }
     private void _configureCommands()
     {
 
@@ -242,7 +248,7 @@ public sealed class Plugin : IDalamudPlugin
             }
             if (profile_guid != Guid.Empty)
             {
-                Configuration.SetActiveProfile(profile_guid);
+                this.SetActiveProfile(profile_guid);
             }
             else
             {

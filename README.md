@@ -8,12 +8,11 @@ It's intended to be a toy, nothing more. Please treat it like that.
 
 ## Acknowledgements
 
-Thank you to my darling Aiko for inspire me to make this project (and cheering me on as I fumble around with it repeatedly making you remake your profiles...)
-
-I doubt that I ever would have created this without your inspiration <3
+Thank you to my darling Aiko for inspiring me to make this project, probably never would have even tried otherwise. <3
 
 ## Features
 
+- Supports (Out of Character) and \*Custom Emote\* as per standard RP practice.
 - Profiles (Including several builtin presets)
   - Builtin presets for soft voice, BIG VOICE, bimbo voice (for the girls at the boudiore), catgirl nyaaa, muted voice, and nervous voice
   - TODO: Import/Export to be able to share profiles with your other friends
@@ -32,5 +31,5 @@ I doubt that I ever would have created this without your inspiration <3
 Add the following repository to Dalamud to download
 
 ```sh
-https://raw.githubusercontent.com/switchy-nia/inflection/main/repo.json
+https://raw.githubusercontent.com/switchy-nia/aikos-inflection/main/repo.json
 ```

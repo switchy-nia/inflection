@@ -13,11 +13,12 @@
         "TestingAssemblyVersion": "0.0.1.2",
         "RepoUrl": "https://github.com/switchy-nia/inflection",
         "DalamudApiLevel": 12,
+        "TestingDalamudApiLevel": 12,
         "LoadPriority": 0,
         "IsHide": false,
         "IsTestingExclusive": false,
         "DownloadLinkInstall": "https://github.com/switchy-nia/inflection/releases/download/0.0.1.1/Inflection.zip",
-        "DownloadLinkTesting": "https://github.com/switchy-nia/inflection/releases/download/0.0.1.2/Inflection.zip",
+        "DownloadLinkTesting": "https://github.com/switchy-nia/inflection/releases/download/testing_0.0.1.2/Inflection.zip",
         "DownloadLinkUpdate": "https://github.com/switchy-nia/inflection/releases/download/0.0.1.1/Inflection.zip",
         "LastUpdate": "1750811162"
     }

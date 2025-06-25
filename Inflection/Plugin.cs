@@ -41,7 +41,7 @@ public sealed class Plugin : IDalamudPlugin
     private unsafe delegate byte ProcessChatInputDelegate(IntPtr uiModule, byte** message, IntPtr a3);
     [Signature("E8 ?? ?? ?? ?? FE 86 ?? ?? ?? ?? C7 86 ?? ?? ?? ?? ?? ?? ?? ??", DetourName = nameof(ProcessChatInputDetour), Fallibility = Fallibility.Auto)]
     private Hook<ProcessChatInputDelegate> ProcessChatInputHook { get; set; } = null!;
-    private readonly string chataliasregex = @"/\/[tspacyfnl][aechrowl1-8i]?[leyvnro]?[iltek1-8]?(n?k?shell|ance|company|ut|ce)?[1-8]?";
+    private readonly string chataliasregex = @"\/[tspacyfnl][aechrowl1-8i]?[leyvnro]?[iltek1-8]?(n?k?shell|ance|company|ut|ce)?[1-8]?";
     private Regex chataliasValidation;
     private readonly List<string> channelaliases = new List<string>()
     {
@@ -127,9 +127,14 @@ public sealed class Plugin : IDalamudPlugin
                     .FirstOrDefault(prefix => messageDecoded.StartsWith(prefix,
                                     StringComparison.OrdinalIgnoreCase));
                 // This means its not a chat channel command and just a normal command, so return original.
-                if (!isChatChannelAlias || matchedCommand.IsNullOrEmpty())
+                if (!isChatChannelAlias)
                 {
-                    Log.Debug("Ignoring Message as it is a command");
+                    Log.Debug($"Ignoring {messageDecoded} as it failed the channel regex");
+                    return ProcessChatInputHook.Original(uiModule, message, a3);
+                }
+                if (matchedCommand.IsNullOrEmpty())
+                {
+                    Log.Debug($"Ignoring {messageDecoded} as it is not in the channel list");
                     return ProcessChatInputHook.Original(uiModule, message, a3);
                 }
 

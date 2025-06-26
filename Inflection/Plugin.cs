@@ -41,8 +41,6 @@ public sealed class Plugin : IDalamudPlugin
     private unsafe delegate byte ProcessChatInputDelegate(IntPtr uiModule, byte** message, IntPtr a3);
     [Signature("E8 ?? ?? ?? ?? FE 86 ?? ?? ?? ?? C7 86 ?? ?? ?? ?? ?? ?? ?? ??", DetourName = nameof(ProcessChatInputDetour), Fallibility = Fallibility.Auto)]
     private Hook<ProcessChatInputDelegate> ProcessChatInputHook { get; set; } = null!;
-    private readonly string chataliasregex = @"\/[tspacyfnl][aechrowl1-8i]?[leyvnro]?[iltek1-8]?(n?k?shell|ance|company|ut|ce)?[1-8]?";
-    private Regex chataliasValidation;
     private readonly List<string> channelaliases = new List<string>()
     {
         "/t", "/tell", "/s", "/say", "/p", "/party", "/a", "/alliance", "/y", "/yell", "/sh", "/shout", "/fc", "/freecompany", "/n", "/novice", "/cwl1", "/cwlinkshell1", "/cwl2", "/cwlinkshell2", "/cwl3", "/cwlinkshell3", "/cwl4", "/cwlinkshell4", "/cwl5", "/cwlinkshell5", "/cwl6", "/cwlinkshell6", "/cwl7", "/cwlinkshell7", "/cwl8", "/cwlinkshell8", "/l1", "/linkshell1", "/l2", "/linkshell2", "/l3", "/linkshell3", "/l4", "/linkshell4", "/l5", "/linkshell5", "/l6", "/linkshell6", "/l7", "/linkshell7", "/l8", "/linkshell8"
@@ -76,7 +74,6 @@ public sealed class Plugin : IDalamudPlugin
         ProcessChatInputHook.Enable();
         // Add a simple message to the log with level set to information
         // Use /xllog to open the log window in-game
-        chataliasValidation = new Regex(chataliasregex);
         Log.Information($"Inflection started successfully");
     }
 
@@ -127,25 +124,19 @@ public sealed class Plugin : IDalamudPlugin
             // We check for commands which can be either "/" or "the autotranslate moji and /"
             if (messageDecoded.StartsWith("/") || messageDecoded.StartsWith(" /"))
             {
-                var chatChannelAlias = chataliasValidation.Match(messageDecoded);
 
-                // This means its not a chat channel command and just a normal command, so return original.
-                if (!chatChannelAlias.Success)
-                {
-                    Log.Debug($"Ignoring {messageDecoded} as it failed the channel regex");
-                    return ProcessChatInputHook.Original(uiModule, message, a3);
-                }
+                var command = messageDecoded.Split(" ")[0];
                 matchedCommand = channelaliases.AsQueryable()
-                    .FirstOrDefault(prefix => chatChannelAlias.Value.Equals(prefix,
+                    .FirstOrDefault(prefix => command.Equals(prefix,
                                     StringComparison.OrdinalIgnoreCase));
                 if (matchedCommand.IsNullOrEmpty())
                 {
-                    Log.Debug($"Ignoring {messageDecoded} as the command portion {chatChannelAlias.Value} it is not in the channel list");
+                    Log.Debug($"Ignoring {messageDecoded} as the command portion {command} it is not in the channel list");
                     return ProcessChatInputHook.Original(uiModule, message, a3);
                 }
 
-                // Set the matched command to the matched channel type. 
-                matchedChannelType = matchedCommand.TrimEnd();
+                // Will use this later when returning the output. The space is only useful with a matched command so adding here.
+                matchedChannelType = matchedCommand.TrimEnd() + " ";
 
                 // if tell command is matched, need extra step to protect target name
                 if (matchedCommand.StartsWith("/tell") || matchedCommand.StartsWith("/t"))
@@ -176,7 +167,7 @@ public sealed class Plugin : IDalamudPlugin
 
             stringToProcess = speech.Speak(stringToProcess);
             // once we have done that, garble that string, and then merge it back with the output command in front.
-            var output = matchedCommand + " " + stringToProcess;
+            var output = matchedCommand + stringToProcess;
 
             // append this to the newSeStringBuilder.
             newSeStringBuilder.Add(new TextPayload(output));

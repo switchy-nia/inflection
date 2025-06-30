@@ -136,7 +136,7 @@ public sealed class Plugin : IDalamudPlugin
                 }
 
                 // Will use this later when returning the output. The space is only useful with a matched command so adding here.
-                matchedChannelType = matchedCommand.TrimEnd() + " ";
+                matchedCommand = matchedCommand.TrimEnd() + " ";
 
                 // if tell command is matched, need extra step to protect target name
                 if (matchedCommand.StartsWith("/tell") || matchedCommand.StartsWith("/t"))

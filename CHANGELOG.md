@@ -1,5 +1,13 @@
 # Change Log
 
+## version 0.0.1.4
+
+- Minor bug fix related to chat channel command formatting
+
+## Version 0.0.1.3
+
+- Attempts fixes further false positives causing certain commands to fail.
+
 ## Version 0.0.1.2
 
 - Fixes a validation issue where emote commands (like `/pet`) matched a chat alias

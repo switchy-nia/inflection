@@ -63,9 +63,8 @@ public class InflectionTest
         };
         Inflections inflections = new Inflections(profile);
         string result = inflections.Speak("This is a test.");
-        Regex regex = new Regex(@"(T-)+This (i-)+is (a-)+a (t-)+test.");
         // Assert.Equal("T-T-T-This i-i-i-is a-a-a-a test.", result);
-        Assert.True(regex.IsMatch(result));
+        Assert.Matches(@"(T-)+This (i-)+is (a-)+a (t-)+test.", result);
     }
 
     [Fact]
@@ -83,6 +82,7 @@ public class InflectionTest
         string result = inflections.Speak("This is a test.");
         Assert.Equal("test test test test.", result);
     }
+
     [Fact]
     public void TestEmote()
     {
@@ -95,6 +95,7 @@ public class InflectionTest
         string result = inflection.Speak("*test test test test.*");
         Assert.Equal("*test test test test.*", result);
     }
+
     [Fact]
     public void TestOOC()
     {

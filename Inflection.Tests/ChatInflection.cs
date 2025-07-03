@@ -108,4 +108,65 @@ public class InflectionTest
         string result = inflection.Speak("(test test test test.)");
         Assert.Equal("(test test test test.)", result);
     }
+
+    [Fact]
+    public void TestTicks()
+    {
+        var profile = new Profile
+        {
+            TicksEnabled = true,
+            TickChance = 1.00f,
+            Ticks = {
+                "tick"
+            },
+            MinWordsPerTick = 3
+        };
+        var inflection = new Inflections(profile);
+        string result = inflection.Speak("One two three four five six seven eight nine");
+        Assert.Equal("One two three tick four five six tick seven eight nine tick", result);
+    }
+
+    [Fact]
+    public void TestMute()
+    {
+        var profile = new Profile
+        {
+            MuteEnabled = true
+        };
+        var inflect = new Inflections(profile);
+        var result = inflect.Speak("This is a long text string that doesn't have much except for (a single OOC) and *waves* everything else should be cut");
+        Assert.Equal("(a single OOC)*waves*", result);
+    }
+
+    [Fact]
+    public void TestPatterns()
+    {
+        var profile = new Profile
+        {
+            PatternsEnabled = true,
+            Patterns = { (@"five", "Replacement Success") }
+        };
+        var inflect = new Inflections(profile);
+        var result = inflect.Speak("One two three four five six seven eight nine");
+        Assert.Equal("One two three four Replacement Success six seven eight nine", result);
+
+
+        profile = new Profile
+        {
+            PatternsEnabled = true,
+            Patterns = { (@"(n)([ao])", "$1y$2") }
+        };
+        inflect = new Inflections(profile);
+        result = inflect.Speak("No, it is not true that natalie is a cat that says nya");
+        Assert.Equal("Nyo, it is nyot true that nyatalie is a cat that says nya", result);
+
+        profile = new Profile
+        {
+            PatternsEnabled = true,
+            Patterns = { (@"(n)([ao])", "$1y$2"), (@"alie\b", "ily") }
+        };
+        inflect = new Inflections(profile);
+        result = inflect.Speak("No, it is not true that natalie is a cat that says nya");
+        Assert.Equal("Nyo, it is nyot true that nyatily is a cat that says nya", result);
+    }
 }

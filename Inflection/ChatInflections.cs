@@ -6,12 +6,12 @@ using System.Text.RegularExpressions;
 // using Serilog;
 namespace Inflection
 {
-    class Cooldown
+    public class Cooldown
     {
-        int count = 0;
+        int count = 1;
         int cooldown = -1;
-        bool CanExecute { get { return count >= cooldown; } }
-        Cooldown(int cooldown)
+        public bool CanExecute { get { return count >= cooldown; } }
+        public Cooldown(int cooldown)
         {
             this.cooldown = cooldown;
         }
@@ -21,7 +21,8 @@ namespace Inflection
         }
         public void Reset()
         {
-            count = 0;
+            // For spacing sensibility. (Minimum)
+            count = 1;
         }
     }
 
@@ -32,19 +33,24 @@ namespace Inflection
         const string WORD_REGEX = @"^(\W*)([\w\W\-\']*?)(\W*)$";
         // This emoji should support the following basic text emojis
         const string EMOJI_REGEX = @"^[:;cDxX><\-\,)CP][:;><\-3)CWwdpP]*[:;cDxX><\-\,3)CWwdpP]$";
+
         Profile profile;
-        Regex punctuationRegex;
-        Regex sentence_regex;
-        Regex word_regex;
-        Regex emoji_regex;
+        Regex punctuationRegex = new Regex(PUNCTUATION_PATTERN, RegexOptions.Compiled);
+        Regex sentence_regex = new Regex(SENTENCE_REGEX, RegexOptions.Compiled);
+        Regex word_regex = new Regex(WORD_REGEX, RegexOptions.Compiled);
+        Regex emoji_regex = new Regex(EMOJI_REGEX, RegexOptions.Compiled);
+        Regex mute_regex = new Regex(@"([\(\*].*?[*\)])", RegexOptions.Compiled);
+
+        private List<(Regex, string)> patterns = new List<(Regex, string)>();
+
 
         public Inflections(Profile new_profile)
         {
             profile = new_profile;
-            punctuationRegex = new Regex(PUNCTUATION_PATTERN, RegexOptions.Compiled);
-            sentence_regex = new Regex(SENTENCE_REGEX, RegexOptions.Compiled);
-            word_regex = new Regex(WORD_REGEX, RegexOptions.Compiled);
-            emoji_regex = new Regex(EMOJI_REGEX, RegexOptions.Compiled);
+            foreach ((string pattern, string replacement) in profile.Patterns)
+            {
+                patterns.Add((new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase), replacement));
+            }
         }
 
         public bool SetToInflect()
@@ -59,10 +65,22 @@ namespace Inflection
         }
         public string Speak(String input)
         {
-            //Log.Debug($"Speak {input} - Start");
 
             StringBuilder output = new StringBuilder();
             Random rand = new Random();
+
+            //Log.Debug($"speak {input} - start");
+            // Note Mute is a special case where we just strip everything that isn't OOC or emote
+            // Therefore, we can do an early return once it is completed.
+            if (profile.MuteEnabled)
+            {
+                foreach (Match match in mute_regex.Matches(input))
+                {
+                    output.Append(match.Value);
+                }
+                return output.ToString();
+            }
+
             // First tokenize it.
             // Simple method of ensuring all punctuation and words have a space between them, then splitting by space.
             // First we need to handle the RP tag '*', this is mostly for formatting purposes later (only one set is supported for now).
@@ -71,7 +89,7 @@ namespace Inflection
             tokens = punctuationRegex.Replace(tokens, @" $1 ");
             List<string> words = tokens.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
-            int ticks = (int)Math.Ceiling((double)words.Count * profile.TickMaxPortionOfSpeech);
+            Cooldown tickCooldown = new Cooldown(profile.MinWordsPerTick);
             bool rp_emote_chat = false;
             bool ooc_chat = false;
 
@@ -110,7 +128,7 @@ namespace Inflection
                 }
                 else
                 {
-                    output.Append(ProcessWord(rand, word, i, words.Count, ref ticks));
+                    output.Append(ProcessWord(rand, word, tickCooldown));
                 }
 
                 output.Append(' ');
@@ -134,6 +152,7 @@ namespace Inflection
             final = Regex.Replace(final, @"([\w\.\!\?])\s+([\)\]\}\,\.\!\?])", "$1$2");
             final = Regex.Replace(final, @"INFOPENEMOTE\s+", "*");
             final = Regex.Replace(final, @"\s+INFCLOSEEMOTE", "*");
+            final = ApplyPatterns(final);
             // final = Regex.Replace(final, @"([\(\[\{\*])\s+(\w)", "$1$2");
             // final = Regex.Replace(final, @"([\w\.\!\?])\s+([\)\]\}\,\.\!\?\*])", "$1$2");
             // TODO: Handle quotes
@@ -166,7 +185,7 @@ namespace Inflection
         }
 
         // Takes the word and processes it based on the specific words
-        private string ProcessWord(Random rand, string word, int word_index, int total_words, ref int ticks)
+        private string ProcessWord(Random rand, string word, Cooldown tickCooldown)
         {
             // By default it will be empty
             switch (profile.VoiceType)
@@ -216,28 +235,27 @@ namespace Inflection
             // Finally if there is an utterance required, add it.
             // The number of ticks here is to respect the maximum portion of a sentence
             // (to prevent RNG from making people have a spasm of utterances unless they want to.)
-            if (profile.TicksEnabled && word_index <= total_words && ticks > 0)
+            if (profile.TicksEnabled)
             {
-                //Log.Debug($"Process {word} verbal ticks");
-
-                // Simple bias to try to ensure that you are twice as likely to have something occur near the end as the beginning
-                // 1 / 10 = much lower chance to roll sufficiently
-                // 5 / 10 = 1f (no mod to roll)
-                // 10 / 10 = almost double the roll bias.
-                // Note: For simplicity, the roll calculation is measuring less than for the chance .
-                var bias = total_words / (1 + word_index);
-                var roll = rand.NextDouble() * bias;
-
-                if (profile.Ticks.Count == 0)
+                if (tickCooldown.CanExecute)
                 {
-                    //Log.Debug($"No verbal ticks found, this should not be possible to set, so there is an error in your configuration.CurrentProfile.");
+                    var roll = rand.NextDouble();
+
+                    if (profile.Ticks.Count == 0)
+                    {
+                        //Log.Debug($"No verbal ticks found, this should not be possible to set, so there is an error in your configuration.CurrentProfile.");
+                    }
+                    else if (roll < profile.TickChance)
+                    {
+                        int index = rand.Next(profile.Ticks.Count);
+                        string tick = profile.Ticks.ElementAt(index);
+                        word = word + " " + tick;
+                    }
+                    tickCooldown.Reset();
                 }
-                else if (roll < profile.TickChance)
+                else
                 {
-                    ticks -= 1;
-                    int index = rand.Next(profile.Ticks.Count);
-                    string tick = profile.Ticks.ElementAt(index);
-                    word = word + " " + tick;
+                    tickCooldown.Tick();
                 }
             }
 
@@ -253,13 +271,15 @@ namespace Inflection
         private string SentenceEnding(Random rand, string input)
         {
             int index = rand.Next(profile.SentenceEndings.Count);
-            return input + " " + profile.SentenceEndings.ElementAt(index);
+            return input.Trim() + " " + profile.SentenceEndings.ElementAt(index);
         }
 
-        private string bimboify(string input)
+        private string ApplyPatterns(string input)
         {
-            // To bimboify speech as per: https://github.com/Gardamuse/mispell/blob/master/src/bimbofy.js
-            // it may be a bit of a longer term project, so this is strictly a "TODO" function.
+            foreach ((Regex pattern, string replacement) in patterns)
+            {
+                input = pattern.Replace(input, replacement);
+            }
             return input;
         }
     }

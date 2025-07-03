@@ -31,7 +31,7 @@ public sealed class Plugin : IDalamudPlugin
     private const string ConfigCommandName = "/inflection";
     private const string EnableProfileCommandName = "/inflectionset";
 
-    private Inflection.Inflections speech = null!;
+    public Inflection.Inflections speech = null!;
     public Configuration Configuration { get; init; }
 
     public readonly WindowSystem WindowSystem = new("Aiko's Inflection");
@@ -47,7 +47,23 @@ public sealed class Plugin : IDalamudPlugin
     };
     public Plugin()
     {
-        Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        try
+        {
+            Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        }
+        catch (Newtonsoft.Json.JsonReaderException e)
+        {
+            Log.Error($"Error reading configuration due to error {e.Message}");
+            Log.Info("Recreating default configuration");
+            Configuration = new Configuration();
+        }
+        catch (Exception e)
+        {
+            Log.Error($"Error reading configuration due to error {e.InnerException}");
+            Log.Info("Recreating default configuration");
+            Configuration = new Configuration();
+        }
+
         if (Configuration.Profiles.Count() == 0)
         {
             Configuration.Profiles = Configuration.BuiltInProfiles();

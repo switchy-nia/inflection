@@ -15,7 +15,8 @@ public class MainWindow : Window, IDisposable
     private Plugin plugin;
     private ProfileEditor profileEditor = new ProfileEditor();
     private WhichMenu menu = WhichMenu.Main;
-
+    private string previewText = "";
+    private string InflectionPreview = "";
     // We give this window a hidden ID using ##
     // So that the user will see "My Amazing Window" as window title,
     // but for ImGui the ID is "My Amazing Window##With a hidden ID"
@@ -55,8 +56,19 @@ public class MainWindow : Window, IDisposable
                 }
                 ImGui.EndTabItem();
             }
+
+            if (ImGui.BeginTabItem("Preview Active Profile##profilePreview"))
+            {
+                ImGui.InputTextMultiline($"Preview Text##profilePreview", ref plugin.Configuration.PreviewText, 200, new Vector2(400, 200));
+                ImGui.TextWrapped(InflectionPreview);
+                if (ImGui.Button("Preview##profilePreview"))
+                {
+                    InflectionPreview = plugin.speech.Speak(plugin.Configuration.PreviewText);
+                }
+            }
         }
         // if (ImGui.Button("Show Settings"))
+        //
         // {
         //     plugin.ToggleConfigUI();
         // }

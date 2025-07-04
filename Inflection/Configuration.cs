@@ -470,6 +470,7 @@ class ProfileEditor
             Checkbox("Ticks Enabled", profile.TicksEnabled, v => profile.TicksEnabled = v);
             Checkbox("Pronoun Correction Enabled", profile.PronounCorrectionEnabled, v => profile.PronounCorrectionEnabled = v);
             Checkbox("Stutter Enabled", profile.StutterEnabled, v => profile.StutterEnabled = v);
+            Checkbox("Global Patterns Enabled", profile.PatternsEnabled, v => profile.PatternsEnabled = v);
             var tmp = profile.VoiceType;
 
             if (ImGui.BeginCombo($"Voice Volume##{profile.Id}voicetype", tmp.ToString()))
@@ -554,7 +555,7 @@ class ProfileEditor
                 ImGui.TableHeadersRow();
 
                 ImGui.TableNextColumn();
-                if (ImGui.Button("+##add"))
+                if (ImGui.Button("+##addpattern"))
                 {
                     profile.Patterns.Add((placeholderPattern, placeholderReplacement));
                     placeholderPattern = "";
@@ -567,7 +568,7 @@ class ProfileEditor
                 foreach ((string pattern, string replacement) in profile.Patterns)
                 {
                     ImGui.TableNextColumn();
-                    if (ImGui.Button("x"))
+                    if (ImGui.Button($"x##patterns{pattern}{replacement}"))
                     {
                         profile.Patterns.Remove((pattern, replacement));
                     }

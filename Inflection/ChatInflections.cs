@@ -28,18 +28,15 @@ namespace Inflection
 
     public class Inflections
     {
+        // Patterns used to parse out the tokens.
         const string PUNCTUATION_PATTERN = @"([\.\?\!\[\]\{\}\,\(\)]|INFOPENEMOTE|INFCLOSEEMOTE)";
-        const string SENTENCE_REGEX = @"([^.]*[^.]*[\.\?\!])([^.]*[^.]*)$";
-        const string WORD_REGEX = @"^(\W*)([\w\W\-\']*?)(\W*)$";
         // This emoji should support the following basic text emojis
         const string EMOJI_REGEX = @"^[:;cDxX><\-\,)CP][:;><\-3)CWwdpP]*[:;cDxX><\-\,3)CWwdpP]$";
 
         Profile profile;
-        Regex punctuationRegex = new Regex(PUNCTUATION_PATTERN, RegexOptions.Compiled);
-        Regex sentence_regex = new Regex(SENTENCE_REGEX, RegexOptions.Compiled);
-        Regex word_regex = new Regex(WORD_REGEX, RegexOptions.Compiled);
-        Regex emoji_regex = new Regex(EMOJI_REGEX, RegexOptions.Compiled);
-        Regex mute_regex = new Regex(@"([\(\*].*?[*\)])", RegexOptions.Compiled);
+        Regex punctuationRegex = new Regex(PUNCTUATION_PATTERN);
+        Regex emoji_regex = new Regex(EMOJI_REGEX);
+        Regex mute_regex = new Regex(@"([\(\*].*?[\*\)])");
 
         private List<(Regex, string)> patterns = new List<(Regex, string)>();
 
@@ -49,7 +46,7 @@ namespace Inflection
             profile = new_profile;
             foreach ((string pattern, string replacement) in profile.Patterns)
             {
-                patterns.Add((new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase), replacement));
+                patterns.Add((new Regex(pattern, RegexOptions.IgnoreCase), replacement));
             }
         }
 
@@ -152,7 +149,10 @@ namespace Inflection
             final = Regex.Replace(final, @"([\w\.\!\?])\s+([\)\]\}\,\.\!\?])", "$1$2");
             final = Regex.Replace(final, @"INFOPENEMOTE\s+", "*");
             final = Regex.Replace(final, @"\s+INFCLOSEEMOTE", "*");
-            final = ApplyPatterns(final);
+            if (profile.PatternsEnabled)
+            {
+                final = ApplyPatterns(final);
+            }
             // final = Regex.Replace(final, @"([\(\[\{\*])\s+(\w)", "$1$2");
             // final = Regex.Replace(final, @"([\w\.\!\?])\s+([\)\]\}\,\.\!\?\*])", "$1$2");
             // TODO: Handle quotes

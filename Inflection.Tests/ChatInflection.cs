@@ -1,6 +1,5 @@
 namespace Inflection.Tests;
 
-using System.Text.RegularExpressions;
 using Inflection;
 public class InflectionTest
 {
@@ -59,7 +58,6 @@ public class InflectionTest
             StutterEnabled = true,
             StutterChance = 100,
             MaxStutterSeverity = 3,
-            MaxStuttersPerSentence = 3,
         };
         Inflections inflections = new Inflections(profile);
         string result = inflections.Speak("This is a test.");
@@ -115,11 +113,11 @@ public class InflectionTest
         var profile = new Profile
         {
             TicksEnabled = true,
-            TickChance = 1.00f,
+            TickChance = 100,
             Ticks = {
                 "tick"
             },
-            MinWordsPerTick = 3
+            TickCooldown = 3
         };
         var inflection = new Inflections(profile);
         string result = inflection.Speak("One two three four five six seven eight nine");
@@ -144,7 +142,7 @@ public class InflectionTest
         var profile = new Profile
         {
             PatternsEnabled = true,
-            Patterns = { (@"five", "Replacement Success") }
+            Patterns = { new WordPatterns(@"five", "Replacement Success") }
         };
         var inflect = new Inflections(profile);
         var result = inflect.Speak("One two three four five six seven eight nine");
@@ -154,7 +152,7 @@ public class InflectionTest
         profile = new Profile
         {
             PatternsEnabled = true,
-            Patterns = { (@"(n)([ao])", "$1y$2") }
+            Patterns = { new WordPatterns(@"(n)([ao])", "$1y$2") }
         };
         inflect = new Inflections(profile);
         result = inflect.Speak("No, it is not true that natalie is a cat that says nya");
@@ -163,7 +161,7 @@ public class InflectionTest
         profile = new Profile
         {
             PatternsEnabled = true,
-            Patterns = { (@"(n)([ao])", "$1y$2"), (@"alie\b", "ily") }
+            Patterns = { new WordPatterns(@"(n)([ao])", "$1y$2"), new WordPatterns(@"alie\b", "ily") }
         };
         inflect = new Inflections(profile);
         result = inflect.Speak("No, it is not true that natalie is a cat that says nya");

@@ -44,9 +44,9 @@ namespace Inflection
         public Inflections(Profile new_profile)
         {
             profile = new_profile;
-            foreach ((string pattern, string replacement) in profile.Patterns)
+            foreach (var pattern in profile.Patterns)
             {
-                patterns.Add((new Regex(pattern, RegexOptions.IgnoreCase), replacement));
+                patterns.Add((new Regex(pattern.Pattern, RegexOptions.IgnoreCase), pattern.Replacement));
             }
         }
 
@@ -55,7 +55,7 @@ namespace Inflection
             return
                 profile.CompelledSpeechEnabled ||
                 profile.TicksEnabled ||
-                profile.PronounCorrectionEnabled ||
+                profile.WordReplacementEnabled ||
                 profile.StutterEnabled ||
                 profile.SentenceStartEnabled ||
                 profile.SentenceEndingEnabled;
@@ -86,7 +86,8 @@ namespace Inflection
             tokens = punctuationRegex.Replace(tokens, @" $1 ");
             List<string> words = tokens.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
-            Cooldown tickCooldown = new Cooldown(profile.MinWordsPerTick);
+            Cooldown tickCooldown = new Cooldown(profile.TickCooldown);
+            Cooldown stutterCooldown = new Cooldown(profile.StutterCooldown);
             bool rp_emote_chat = false;
             bool ooc_chat = false;
 
@@ -125,7 +126,7 @@ namespace Inflection
                 }
                 else
                 {
-                    output.Append(ProcessWord(rand, word, tickCooldown));
+                    output.Append(ProcessWord(rand, word, tickCooldown, stutterCooldown));
                 }
 
                 output.Append(' ');
@@ -141,6 +142,11 @@ namespace Inflection
             {
                 final = SentenceEnding(rand, final);
             }
+
+            if (profile.PatternsEnabled)
+            {
+                final = ApplyPatterns(final);
+            }
             // undo the tokenization. 
             // And restore the message formatting now that we're done messing with it.
             final = Regex.Replace(final, @"([\(\[\{])\s+(\w)", "$1$2");
@@ -149,12 +155,6 @@ namespace Inflection
             final = Regex.Replace(final, @"([\w\.\!\?])\s+([\)\]\}\,\.\!\?])", "$1$2");
             final = Regex.Replace(final, @"INFOPENEMOTE\s+", "*");
             final = Regex.Replace(final, @"\s+INFCLOSEEMOTE", "*");
-            if (profile.PatternsEnabled)
-            {
-                final = ApplyPatterns(final);
-            }
-            // final = Regex.Replace(final, @"([\(\[\{\*])\s+(\w)", "$1$2");
-            // final = Regex.Replace(final, @"([\w\.\!\?])\s+([\)\]\}\,\.\!\?\*])", "$1$2");
             // TODO: Handle quotes
             return final.Trim();
         }
@@ -185,7 +185,7 @@ namespace Inflection
         }
 
         // Takes the word and processes it based on the specific words
-        private string ProcessWord(Random rand, string word, Cooldown tickCooldown)
+        private string ProcessWord(Random rand, string word, Cooldown tickCooldown, Cooldown stutterCooldown)
         {
             // By default it will be empty
             switch (profile.VoiceType)
@@ -208,28 +208,37 @@ namespace Inflection
             }
 
             // If this is found in a pronouns list, change it.
-            if (profile.PronounCorrectionEnabled)
+            if (profile.WordReplacementEnabled)
             {
                 var key = word.ToLower();
-                if (profile.PronounsReplacements.ContainsKey(key))
+                if (profile.WordReplacement.ContainsKey(key))
                 {
                     //Log.Debug($"Process {word} using forced pronouns");
-                    word = profile.PronounsReplacements[key];
+                    word = profile.WordReplacement[key];
                 }
             }
 
-            // Roll for stuttering. TODO: Make configurable.
-            if (profile.StutterEnabled && rand.Next(100) < profile.StutterChance)
+            if (profile.StutterEnabled)
             {
-                //Log.Debug($"Process {word} and making it stutter");
-                string stutter = "";
-                // Randomize it with a slightly more drammatic stutter
-                int max_stutters = rand.Next(profile.MaxStutterSeverity);
-                for (int i = 0; i < 1 + max_stutters; i++)
-                {
-                    stutter += word.First() + "-";
+                if (stutterCooldown.CanExecute)
+                { //Log.Debug($"Process {word} and making it stutter");
+                    if (rand.Next(100) < profile.StutterChance)
+                    {
+                        string stutter = "";
+                        // Randomize it with a slightly more drammatic stutter
+                        int max_stutters = rand.Next(profile.MaxStutterSeverity);
+                        for (int i = 0; i < 1 + max_stutters; i++)
+                        {
+                            stutter += word.First() + "-";
+                        }
+                        word = stutter + word;
+                        stutterCooldown.Reset();
+                    }
                 }
-                word = stutter + word;
+                else
+                {
+                    stutterCooldown.Tick();
+                }
             }
 
             // Finally if there is an utterance required, add it.

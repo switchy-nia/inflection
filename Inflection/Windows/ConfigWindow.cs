@@ -23,8 +23,7 @@ public class ConfigWindow : Window, IDisposable
         previewStutterEnabled = configuration.ActiveProfile.StutterEnabled;
         previewStutterChance = configuration.ActiveProfile.StutterChance;
         previewStutterSeverity = configuration.ActiveProfile.MaxStutterSeverity;
-
-        previewForcedPronounEnabled = configuration.ActiveProfile.PronounCorrectionEnabled;
+        previewForcedPronounEnabled = configuration.ActiveProfile.WordReplacementEnabled;
     }
 
     // We give this window a constant ID using ###

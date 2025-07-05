@@ -50,10 +50,18 @@ public class MainWindow : Window, IDisposable
             }
             if (ImGui.BeginTabItem("Edit Active Profile##profileEdit"))
             {
+                ImGui.TextUnformatted($"Settings for Active Profiles. Please be sure to save the settings below.");
+                if (ImGui.Button("Save Changes"))
+                {
+                    plugin.SetActiveProfile(plugin.Configuration.ActiveProfileId);
+                    plugin.Configuration.Save();
+                }
+
                 if (profileEditor.Draw(plugin.Configuration.ActiveProfile))
                 {
                     plugin.Configuration.Save();
                 }
+
                 ImGui.EndTabItem();
             }
 
@@ -63,6 +71,8 @@ public class MainWindow : Window, IDisposable
                 ImGui.TextWrapped(InflectionPreview);
                 if (ImGui.Button("Preview##profilePreview"))
                 {
+                    // hack to get this to work until UI is remade
+                    plugin.SetActiveProfile(plugin.Configuration.ActiveProfileId);
                     InflectionPreview = plugin.speech.Speak(plugin.Configuration.PreviewText);
                 }
             }
@@ -120,6 +130,7 @@ public class MainWindow : Window, IDisposable
     }
     private void drawMain()
     {
+        ImGui.Checkbox("Enable Inflection", ref plugin.Configuration.InflectionEnabled);
         int current = plugin.Configuration.ActiveProfileIndex;
         // Maybe write out some welcome text.
         ImGui.TextWrapped("""
@@ -132,7 +143,6 @@ public class MainWindow : Window, IDisposable
 
                 - Switchy Nia
                 """);
-
         if (ImGui.Button("New Blank Profile"))
         {
             Plugin.Log.Debug($"Making a new empty profile");

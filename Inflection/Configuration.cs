@@ -13,6 +13,7 @@ namespace Inflection;
 public class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = 0;
+    public bool InflectionEnabled = false;
     public string PreviewText = @"Tell me...for whom do you fight?
 Hmph! Do you believe in Eorzea? Eorzea's unity is forged of falsehoods. Its city-states are built on deceit. And its faith is an instrument of deception.
 It is naught but a cobweb of lies.To believe in Eorzea is to believe in nothing.
@@ -81,9 +82,9 @@ It is only right that I should take your realm. For none among you has the power
                 Label = "nervous",
                 Readonly = true,
                 StutterEnabled = true,
-                StutterChance = 10,
+                StutterChance = 25,
                 MaxStutterSeverity = 3,
-                MaxStuttersPerSentence = 3,
+                StutterCooldown = 3
             },
             new Profile {
                 Label = "small voice",
@@ -101,12 +102,12 @@ It is only right that I should take your realm. For none among you has the power
                 Label = "Catgirl",
                 Readonly = true,
                 TicksEnabled = true,
-                PronounCorrectionEnabled = true,
+                WordReplacementEnabled = true,
                 StutterEnabled = true,
                 SentenceStartEnabled = false,
                 SentenceEndingEnabled = false,
                 CompelledSpeechWords = new HashSet<string>() {},
-                PronounsReplacements = new Dictionary<string, string>() {
+                WordReplacement = new Dictionary<string, string>() {
                     { "i", "kitty" },
                     { "me", "kitty" },
                     { "i'm", "kitty is"},
@@ -117,17 +118,16 @@ It is only right that I should take your realm. For none among you has the power
                 Ticks = new HashSet<string>() {
                     "mew", "meow", "mrow"
                 },
-                TickChance = 0.20f,
-                TickMaxPortionOfSpeech = 0.2f,
-                MinWordsPerTick = 7,
+                TickChance = 20,
+                TickCooldown = 7,
                 StutterChance = 3,
                 MaxStutterSeverity = 2,
-                MaxStuttersPerSentence = 3,
+                StutterCooldown = 10,
 
                 PatternsEnabled = true,
                 Patterns = {
-                    ( @"\b(me)", "meow"),
-                    ( @"^[aiouaiouee](n)([aoeiu])", "$1y$2"),
+                    new WordPatterns( @"\b(me)", "meow"),
+                    new WordPatterns( @"^[aiouaiouee](n)([aoeiu])", "$1y$2"),
                 }
             },
 
@@ -140,24 +140,24 @@ It is only right that I should take your realm. For none among you has the power
                 },
                 SentenceEndingEnabled = true,
                 SentenceEndings = { "ya know ♥", "or whatever ♥", "and stuff ♥" },
-                TickChance = 0.3f,
-                MinWordsPerTick = 4,
+                TickChance = 3,
+                TickCooldown = 4,
                 PatternsEnabled = true,
                 Patterns = {
-                    (@"\d\d\d+", "lots"),
-                    (@"bility\b", "bilty"),
-                    (@"tible\b", "tidle"),
-                    (@"tes\b", "ties"),
-                    (@"ces\b", "cies"),
-                    (@"ges\b", "gies"),
-                    (@"uter\b", "tuer"),
-                    (@"\bth(?!i)", "d"),
-                    (@"ph\B", "f"),
-                    (@"ee", "ea"),
-                    (@"ou", "u"),
-                    (@"([sv])e\b", "$1"),
-                    (@"([b-df-hj-npv-z])r\B/", "$1w"),
-                    (@"ss\b", "z")
+                    new WordPatterns(@"\d\d\d+", "lots"),
+                    new WordPatterns(@"bility\b", "bilty"),
+                    new WordPatterns(@"tible\b", "tidle"),
+                    new WordPatterns(@"tes\b", "ties"),
+                    new WordPatterns(@"ces\b", "cies"),
+                    new WordPatterns(@"ges\b", "gies"),
+                    new WordPatterns(@"uter\b", "tuer"),
+                    new WordPatterns(@"\bth(?!i)", "d"),
+                    new WordPatterns(@"ph\B", "f"),
+                    new WordPatterns(@"ee", "ea"),
+                    new WordPatterns(@"ou", "u"),
+                    new WordPatterns(@"([sv])e\b", "$1"),
+                    new WordPatterns(@"([b-df-hj-npv-z])r\B/", "$1w"),
+                    new WordPatterns(@"ss\b", "z")
                 }
             },
 
@@ -170,12 +170,12 @@ It is only right that I should take your realm. For none among you has the power
                 },
                 PatternsEnabled = true,
                 Patterns = {
-                    ("(?:r|l)", "w"),
-                    ("(?:R|L)", "W"),
-                    ("n([aeiou])", "ny$1"),
-                    ("N([aeiou])", "Ny$1"),
-                    ("N([AEIOU])", "NY$1"),
-                    ("ove", "uv"),
+                    new WordPatterns("(?:r|l)", "w"),
+                    new WordPatterns("(?:R|L)", "W"),
+                    new WordPatterns("n([aeiou])", "ny$1"),
+                    new WordPatterns("N([aeiou])", "Ny$1"),
+                    new WordPatterns("N([AEIOU])", "NY$1"),
+                    new WordPatterns("ove", "uv"),
                 }
 
             },
@@ -240,10 +240,26 @@ It is only right that I should take your realm. For none among you has the power
             this.ActiveProfileId = this.Profiles[0].Id;
     }
 }
+
+public struct WordPatterns
+{
+    public string Pattern;
+    public string Replacement;
+    public int Chance;
+    public WordPatterns(string pattern, string replacement, int chance = 100)
+    {
+        Pattern = pattern;
+        Replacement = replacement;
+        Chance = chance;
+    }
+}
+
+
 public enum VoiceVolume
 {
     Normal, Small, Big
 }
+
 [Serializable]
 public class Profile
 {
@@ -252,7 +268,7 @@ public class Profile
     public bool Readonly { get; set; } = false;
     public bool CompelledSpeechEnabled { get; set; } = false;
     public bool TicksEnabled { get; set; } = false;
-    public bool PronounCorrectionEnabled { get; set; } = false;
+    public bool WordReplacementEnabled { get; set; } = false;
     public bool StutterEnabled { get; set; } = false;
     public bool SentenceStartEnabled { get; set; } = false;
     public bool SentenceEndingEnabled { get; set; } = false;
@@ -266,24 +282,23 @@ public class Profile
     public HashSet<string> SentenceStarts = new HashSet<string>();
     public HashSet<string> SentenceEndings = new HashSet<string>();
 
-    public Dictionary<string, string> PronounsReplacements = new Dictionary<string, string>() { };
+    public Dictionary<string, string> WordReplacement = new Dictionary<string, string>() { };
 
-    public float TickChance = 1.00f;
-    public float TickMaxPortionOfSpeech = 0.1f;
-    public int MinWordsPerTick = 5;
-    public string TickEnd = "";
+    public int TickChance = 100;
+    public int TickCooldown = 5;
 
     public int StutterChance = 10;
     public int MaxStutterSeverity = 3;
-    public int MaxStuttersPerSentence = 3;
+    public int StutterCooldown = 3;
 
     public bool PatternsEnabled = false;
-    public HashSet<(string, string)> Patterns = new HashSet<(string, string)>() { };
+    public HashSet<WordPatterns> Patterns = new HashSet<WordPatterns>() { };
 
     public Profile()
     {
         this.Id = Guid.NewGuid();
     }
+
     /// Creates a shallow copy of the profile members (acts as a &mut ref)
     public Profile ShallowCopy()
     {
@@ -314,8 +329,8 @@ class ProfileEditor
     private string placeholderEnding = "";
     private string placeholderPattern = "";
     private string placeholderReplacement = "";
-    private string addPronounKey = "";
-    private string addPronounValue = "";
+    private string addWordReplacementKey = "";
+    private string addWordReplacementValue = "";
     private string addTick = "";
     private string addCompelledWord = "";
     /// Returns if save has been pressed.
@@ -335,10 +350,6 @@ class ProfileEditor
         this.DrawStutterRows(profile);
         this.DrawSentenceConfigRows(profile);
         this.DrawCustomPatternsConfigRows(profile);
-        if (!profile.Readonly && ImGui.Button("Save Changes"))
-        {
-            return true;
-        }
         return changed;
     }
 
@@ -398,27 +409,7 @@ class ProfileEditor
                 }
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(word);
-                // var tempWord = word;
-                // if (ImGui.InputText($"##word{word}", ref tempWord, 40))
-                // {
-                //     words.Remove(word);
-                //     words.Add(tempWord);
-                // }
             }
-            // for (int i = 0; i < words.Count; i++)
-            // {
-            //     ImGui.TableNextColumn();
-            //     if (ImGui.Button("x"))
-            //     {
-            //         words.RemoveAt(i);
-            //     }
-            //     ImGui.TableNextColumn();
-            //     string tempWord = words[i];
-            //     if (ImGui.InputText($"##{i}word", ref tempWord, 40))
-            //     {
-            //         words[i] = tempWord;
-            //     }
-            // }
         }
     }
 
@@ -468,7 +459,7 @@ class ProfileEditor
             Checkbox("Mute Enabled", profile.MuteEnabled, v => profile.MuteEnabled = v);
             Checkbox("Compelled Speech Enabled", profile.CompelledSpeechEnabled, v => profile.CompelledSpeechEnabled = v);
             Checkbox("Ticks Enabled", profile.TicksEnabled, v => profile.TicksEnabled = v);
-            Checkbox("Pronoun Correction Enabled", profile.PronounCorrectionEnabled, v => profile.PronounCorrectionEnabled = v);
+            Checkbox("Pronoun Correction Enabled", profile.WordReplacementEnabled, v => profile.WordReplacementEnabled = v);
             Checkbox("Stutter Enabled", profile.StutterEnabled, v => profile.StutterEnabled = v);
             Checkbox("Global Patterns Enabled", profile.PatternsEnabled, v => profile.PatternsEnabled = v);
             var tmp = profile.VoiceType;
@@ -501,7 +492,7 @@ class ProfileEditor
         if (ImGui.CollapsingHeader($"Vocal Ticks##{profile.Id}ticks"))
         {
             ImGui.BeginDisabled(profile.Readonly);
-            InputInt("Minimum Words between Ticks", profile.MinWordsPerTick, v => profile.MinWordsPerTick = v);
+            InputInt("Minimum Words between Ticks", profile.TickCooldown, v => profile.TickCooldown = v);
             this.DrawWordListWidget("Possible Ticks", profile.Ticks, ref addTick);
             // int tempTickChance = (int)(profile.TickChance * 100);
             // InputInt("Tick Chance %", (int)(profile.TickChance * 100), v =>
@@ -518,9 +509,9 @@ class ProfileEditor
         if (ImGui.CollapsingHeader($"Stutter Configuration##{profile.Id}stutter"))
         {
             ImGui.BeginDisabled(profile.Readonly);
-            InputInt("StutterChance", profile.StutterChance, v => profile.StutterChance = v);
-            InputInt("MaxStutterSeverity", profile.MaxStutterSeverity, v => profile.MaxStutterSeverity = v);
-            InputInt("MaxStuttersPerSentence", profile.MaxStuttersPerSentence, v => profile.MaxStuttersPerSentence = v);
+            InputInt("Stutter Chance (%)", profile.StutterChance, v => profile.StutterChance = v);
+            InputInt("Stutter Severity", profile.MaxStutterSeverity, v => profile.MaxStutterSeverity = v);
+            InputInt("Stutter Cooldown (words)", profile.StutterCooldown, v => profile.StutterCooldown = v);
             ImGui.EndDisabled();
         }
     }
@@ -532,12 +523,10 @@ class ProfileEditor
             ImGui.BeginDisabled(profile.Readonly);
             this.DrawWordListWidget("Sentence Beginnings", profile.SentenceStarts, ref placeholderStart);
             this.DrawWordListWidget("Sentence Endings", profile.SentenceEndings, ref placeholderEnding);
-            // InputText("SentenceStarts", profile.SentenceStarts, 120, v => profile.SentenceStarts = v);
-            // InputText("SentenceEndings", profile.SentenceEndings, 120, v => profile.SentenceEndings = v);
             ImGui.Separator();
-            this.DrawDictionaryWidget("Pronouns", profile.PronounsReplacements, ref addPronounKey, ref addPronounValue);
+            this.DrawDictionaryWidget("Word Replacements", profile.WordReplacement, ref addWordReplacementKey, ref addWordReplacementValue);
             ImGui.Separator();
-            this.DrawWordListWidget("Compelled words", profile.CompelledSpeechWords, ref addCompelledWord);
+            this.DrawWordListWidget("Compelled Speech Word List", profile.CompelledSpeechWords, ref addCompelledWord);
             ImGui.EndDisabled();
         }
     }
@@ -557,7 +546,7 @@ class ProfileEditor
                 ImGui.TableNextColumn();
                 if (ImGui.Button("+##addpattern"))
                 {
-                    profile.Patterns.Add((placeholderPattern, placeholderReplacement));
+                    profile.Patterns.Add(new WordPatterns(placeholderPattern, placeholderReplacement));
                     placeholderPattern = "";
                 }
                 ImGui.TableNextColumn();
@@ -565,17 +554,17 @@ class ProfileEditor
                 ImGui.TableNextColumn();
                 ImGui.InputText("##newreplacement", ref placeholderReplacement, 40);
 
-                foreach ((string pattern, string replacement) in profile.Patterns)
+                foreach (WordPatterns pattern in profile.Patterns)
                 {
                     ImGui.TableNextColumn();
-                    if (ImGui.Button($"x##patterns{pattern}{replacement}"))
+                    if (ImGui.Button($"x##patterns{pattern}"))
                     {
-                        profile.Patterns.Remove((pattern, replacement));
+                        profile.Patterns.Remove(pattern);
                     }
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(pattern);
+                    ImGui.TextUnformatted(pattern.Pattern);
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted(replacement);
+                    ImGui.TextUnformatted(pattern.Replacement);
                 }
             }
             ImGui.EndDisabled();

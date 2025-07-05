@@ -114,6 +114,10 @@ public sealed class Plugin : IDalamudPlugin
     /// Taken from Gagspeak chat deteours to pull the chat information.
     private unsafe byte ProcessChatInputDetour(IntPtr uiModule, byte** message, IntPtr a3)
     {
+        if (!Configuration.InflectionEnabled)
+        {
+            return ProcessChatInputHook.Original(uiModule, message, a3);
+        }
         // Put all this shit in a try-catch loop so we can catch any possible thrown exception.
         try
         {
@@ -125,7 +129,7 @@ public sealed class Plugin : IDalamudPlugin
             foreach (var payload in originalSeString.Payloads)
                 Log.Debug($"Message Payload [{payload.Type}]: {payload.ToString()}");
 
-            if (string.IsNullOrWhiteSpace(messageDecoded))
+            if (!Configuration.InflectionEnabled || string.IsNullOrWhiteSpace(messageDecoded))
             {
                 Log.Debug("Message was null or whitespace, returning original.");
                 return ProcessChatInputHook.Original(uiModule, message, a3);

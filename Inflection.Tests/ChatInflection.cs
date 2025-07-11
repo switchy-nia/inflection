@@ -58,6 +58,7 @@ public class InflectionTest
             StutterEnabled = true,
             StutterChance = 100,
             MaxStutterSeverity = 3,
+            StutterCooldown = 0
         };
         Inflections inflections = new Inflections(profile);
         string result = inflections.Speak("This is a test.");

@@ -131,7 +131,19 @@ public class MainWindow : Window, IDisposable
     private void drawMain()
     {
         ImGui.Checkbox("Enable Inflection", ref plugin.Configuration.InflectionEnabled);
-        int current = plugin.Configuration.ActiveProfileIndex;
+        if (plugin.ConfigOverwritten)
+        {
+            if (ImGui.Button("X"))
+            {
+                plugin.ConfigOverwritten = false;
+            }
+
+            ImGui.TextColored(
+                    new Vector4(1f, 0f, 0f, 1f),
+                    "Configuration Error"
+            );
+            ImGui.TextUnformatted("Your configuration has been reset due to no longer being compatible with inflection (sorry!) please open up the configuration menu and save it. If you would like to back it up, you can do so by navigating to `%appdata%/xivlauncher/pluginConfigs` and copying Inflection.json somewhere else on your PC");
+        }
         // Maybe write out some welcome text.
         ImGui.TextWrapped("""
                 Hello and welcome to this little plugin of mine. It was originally made for my darling Aiko, but if you have it installed you are very welcome to play around with it.
@@ -167,13 +179,11 @@ public class MainWindow : Window, IDisposable
         var label = plugin.Configuration.ActiveProfile.Label;
         if (ImGui.BeginCombo("Profile##selector", plugin.Configuration.ActiveProfile.Label))
         {
-            for (int i = 0; i < plugin.Configuration.Profiles.Count; i++)
+            foreach (var profile in plugin.Configuration.Profiles)
             {
-                if (ImGui.Selectable(plugin.Configuration.Profiles[i].Label, i == current))
+                if (ImGui.Selectable(profile.Label, plugin.Configuration.ActiveProfileId.Equals(profile.Id)))
                 {
-                    var id = plugin.Configuration.Profiles[i].Id;
-                    plugin.SetActiveProfile(id);
-                    current = plugin.Configuration.ActiveProfileIndex;
+                    plugin.SetActiveProfile(profile.Id);
                 }
             }
             ImGui.EndCombo();

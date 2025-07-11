@@ -38,7 +38,7 @@ namespace Inflection
         Regex emoji_regex = new Regex(EMOJI_REGEX);
         Regex mute_regex = new Regex(@"([\(\*].*?[\*\)])");
 
-        private List<(Regex, string)> patterns = new List<(Regex, string)>();
+        private List<(Regex, string, int)> patterns = new List<(Regex, string, int)>();
 
 
         public Inflections(Profile new_profile)
@@ -46,7 +46,7 @@ namespace Inflection
             profile = new_profile;
             foreach (var pattern in profile.Patterns)
             {
-                patterns.Add((new Regex(pattern.Pattern, RegexOptions.IgnoreCase), pattern.Replacement));
+                patterns.Add((new Regex(pattern.Pattern, RegexOptions.IgnoreCase), pattern.Replacement, pattern.Chance));
             }
         }
 
@@ -145,7 +145,7 @@ namespace Inflection
 
             if (profile.PatternsEnabled)
             {
-                final = ApplyPatterns(final);
+                final = ApplyPatterns(final, rand);
             }
             // undo the tokenization. 
             // And restore the message formatting now that we're done messing with it.
@@ -248,13 +248,12 @@ namespace Inflection
             {
                 if (tickCooldown.CanExecute)
                 {
-                    var roll = rand.NextDouble();
 
                     if (profile.Ticks.Count == 0)
                     {
                         //Log.Debug($"No verbal ticks found, this should not be possible to set, so there is an error in your configuration.CurrentProfile.");
                     }
-                    else if (roll < profile.TickChance)
+                    else if (rand.Next(100) < profile.TickChance)
                     {
                         int index = rand.Next(profile.Ticks.Count);
                         string tick = profile.Ticks.ElementAt(index);
@@ -283,13 +282,20 @@ namespace Inflection
             return input.Trim() + " " + profile.SentenceEndings.ElementAt(index);
         }
 
-        private string ApplyPatterns(string input)
+        private string ApplyPatterns(string input, Random rand)
         {
-            foreach ((Regex pattern, string replacement) in patterns)
+            StringBuilder output = new StringBuilder(input);
+            foreach ((Regex pattern, string replacement, int chance) in patterns)
             {
-                input = pattern.Replace(input, replacement);
+                foreach (Match match in pattern.Matches(input))
+                {
+                    if (chance == 100 || rand.Next(100) < chance)
+                    {
+                        output = output.Replace(match.Value, match.Result(replacement));
+                    }
+                }
             }
-            return input;
+            return output.ToString();
         }
     }
 }

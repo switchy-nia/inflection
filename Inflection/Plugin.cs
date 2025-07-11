@@ -32,6 +32,7 @@ public sealed class Plugin : IDalamudPlugin
     private const string EnableProfileCommandName = "/inflectionset";
 
     public Inflection.Inflections speech = null!;
+    public bool ConfigOverwritten = false;
     public Configuration Configuration { get; init; }
 
     public readonly WindowSystem WindowSystem = new("Aiko's Inflection");
@@ -55,23 +56,24 @@ public sealed class Plugin : IDalamudPlugin
         {
             Log.Error($"Error reading configuration due to error {e.Message}");
             Log.Info("Recreating default configuration");
+            ConfigOverwritten = true;
             Configuration = new Configuration();
         }
         catch (Exception e)
         {
             Log.Error($"Error reading configuration due to error {e.InnerException}");
             Log.Info("Recreating default configuration");
+            ConfigOverwritten = true;
             Configuration = new Configuration();
         }
 
         if (Configuration.Profiles.Count() == 0)
         {
-            Configuration.Profiles = Configuration.BuiltInProfiles();
             Configuration.SetActiveProfile(Configuration.Profiles.First().Id);
         }
 
-        // ConfigWindow = new ConfigWindow(this);
         MainWindow = new MainWindow(this);
+        // ConfigWindow = new ConfigWindow(this);
         // WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
 
@@ -245,7 +247,9 @@ public sealed class Plugin : IDalamudPlugin
         if (args.Length == 0)
         {
             Log.Info($"Disabling profiles");
-            var id = Configuration.Profiles.Find(p => p.Label == "Empty")!.Id;
+            // TODO: Implement a better abstraction for finding a profile. Maybe need to declare it a custom datastructure? IDK.
+            // This is fine for now.
+            var id = Configuration.Profiles.ToList().Find(p => p.Label == "Empty")!.Id;
             Configuration.SetActiveProfile(id);
         }
         else
@@ -254,7 +258,9 @@ public sealed class Plugin : IDalamudPlugin
             var profile_guid = Guid.Empty;
             if (!Guid.TryParse(args, out profile_guid))
             {
-                var profile = this.Configuration.Profiles.Find(p => p.Label == args);
+                // TODO: Implement a better abstraction for finding a profile. Maybe need to declare it a custom datastructure? IDK.
+                // This is fine for now.
+                var profile = this.Configuration.Profiles.ToList().Find(p => p.Label == args);
                 profile_guid = profile != null ? profile.Id : Guid.Empty;
             }
             if (profile_guid != Guid.Empty)

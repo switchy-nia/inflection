@@ -4,6 +4,7 @@ using ImGuiNET;
 using System;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Inflection;
 
@@ -34,33 +35,37 @@ It is only right that I should take your realm. For none among you has the power
     // public Dictionary<string, Profile> DefaultProfile = new Dictionary<Guid, Profile>();
     // public Dictionary<Guid, Profile> CustomProfile = new Dictionary<Guid, Profile>();
     public Guid ActiveProfileId;
-    public int ActiveProfileIndex
+
+    [NonSerialized]
+    public readonly List<Profile> BuiltInProfiles = Configuration.InitBuiltInProfiles();
+
+    public List<Profile> CustomProfiles = new List<Profile>();
+
+    [JsonIgnore]
+    public IEnumerable<Profile> Profiles
     {
         get
         {
-            if (Profiles.Count == 0)
-            {
-                return -1;
-            }
-            else
-                return Profiles.FindIndex(0, Profiles.Count, profile => profile.Id.Equals(ActiveProfileId));
+            return this.GetProfiles();
         }
     }
-    public List<Profile> Profiles = new List<Profile>();
+
+    [JsonIgnore]
     public Profile ActiveProfile
     {
         get
         {
-            var profile = Profiles.Find(profile => profile.Id.Equals(ActiveProfileId));
-            if (profile == null)
+            foreach (var p in Profiles)
             {
-                Plugin.Log.Debug($"ProfileID {ActiveProfileId} is null returning default");
-                return Profiles[0];
+
+                if (p.Id.Equals(ActiveProfileId))
+                {
+                    return p;
+                }
             }
-            else
-            {
-                return profile;
-            }
+            Plugin.Log.Debug($"ProfileID {ActiveProfileId} is null returning default");
+            ActiveProfileId = BuiltInProfiles[0].Id;
+            return BuiltInProfiles[0];
         }
     }
 
@@ -70,15 +75,17 @@ It is only right that I should take your realm. For none among you has the power
         Plugin.PluginInterface.SavePluginConfig(this);
     }
 
-    public static List<Profile> BuiltInProfiles()
+    private static List<Profile> InitBuiltInProfiles()
     {
         List<Profile> profiles = new List<Profile>() {
             new Profile {
+                Id = Guid.Parse("98d7fbbd-e68b-47dc-bb59-b07314245f7f"),
                 Label = "Empty",
                 Readonly = true,
             },
 
             new Profile {
+                Id = Guid.Parse("70ea7bb5-ca01-4af5-b3fa-0cf9479a2663"),
                 Label = "nervous",
                 Readonly = true,
                 StutterEnabled = true,
@@ -86,19 +93,23 @@ It is only right that I should take your realm. For none among you has the power
                 MaxStutterSeverity = 3,
                 StutterCooldown = 3
             },
+
             new Profile {
+                Id = Guid.Parse("72ccfc71-2703-497b-865a-f577ca2db107"),
                 Label = "small voice",
                 Readonly = true,
                 VoiceType = VoiceVolume.Small,
             },
 
             new Profile {
+                Id = Guid.Parse("7b51cc2f-7949-42b1-9c69-2f0ab9af1008"),
                 Label = "BIG TALK",
                 Readonly = true,
                 VoiceType = VoiceVolume.Big,
             },
 
             new Profile {
+                Id = Guid.Parse("9528347d-0f04-4f33-9289-0c7bdf9f9e88"),
                 Label = "Catgirl",
                 Readonly = true,
                 TicksEnabled = true,
@@ -127,41 +138,48 @@ It is only right that I should take your realm. For none among you has the power
                 PatternsEnabled = true,
                 Patterns = {
                     new WordPatterns( @"\b(me)", "meow"),
-                    new WordPatterns( @"^[aiouaiouee](n)([aoeiu])", "$1y$2"),
+                    new WordPatterns( @"([n])([aoeu])", "$1y$2"),
                 }
             },
 
             new Profile {
+                Id = Guid.Parse("2e5b4421-548f-402e-9724-9daf99c37bc0"),
                 Label = "Bimbo",
                 Readonly = true,
                 TicksEnabled = true,
                 Ticks = new HashSet<string>() {
-                    "umm", "like", "lol", "ummmm", "*giggles*"
+                    "umm", "like", "ummmm", "*giggles*", "so", "totally"
                 },
                 SentenceEndingEnabled = true,
-                SentenceEndings = { "ya know ♥", "or whatever ♥", "and stuff ♥" },
-                TickChance = 3,
-                TickCooldown = 4,
+                SentenceEndings = { "ya know ♥", "or whatever ♥", "and stuff ♥", "lol ♥" },
+                TickChance = 20,
+                TickCooldown = 5,
                 PatternsEnabled = true,
                 Patterns = {
-                    new WordPatterns(@"\d\d\d+", "lots"),
-                    new WordPatterns(@"bility\b", "bilty"),
-                    new WordPatterns(@"tible\b", "tidle"),
-                    new WordPatterns(@"tes\b", "ties"),
-                    new WordPatterns(@"ces\b", "cies"),
-                    new WordPatterns(@"ges\b", "gies"),
-                    new WordPatterns(@"uter\b", "tuer"),
-                    new WordPatterns(@"\bth(?!i)", "d"),
-                    new WordPatterns(@"ph\B", "f"),
-                    new WordPatterns(@"ee", "ea"),
-                    new WordPatterns(@"ou", "u"),
-                    new WordPatterns(@"([sv])e\b", "$1"),
-                    new WordPatterns(@"([b-df-hj-npv-z])r\B/", "$1w"),
-                    new WordPatterns(@"ss\b", "z")
+                    new WordPatterns(@"\d\d\d+", "lots", 75),
+                    new WordPatterns(@"bility\b", "bilty", 50),
+                    new WordPatterns(@"tible\b", "tidle", 50),
+                    new WordPatterns(@"tes\b", "ties", 25),
+                    new WordPatterns(@"ces\b", "cies", 50),
+                    new WordPatterns(@"ges\b", "gies", 50),
+                    new WordPatterns(@"uter\b", "tuer", 25),
+                    new WordPatterns(@"\bth(?!i)", "d", 25),
+                    new WordPatterns(@"ph\B", "f", 65),
+                    new WordPatterns(@"ee", "ea", 50),
+                    new WordPatterns(@"ou", "u", 25),
+                    new WordPatterns(@"([sv])e\b", "$1", 25),
+                    new WordPatterns(@"([b-df-hj-npv-z])r\B/", "$1w", 25),
+                    new WordPatterns(@"que\b", "ck", 60),
+                    new WordPatterns(@"gi\B", "ji", 50),
+                    new WordPatterns(@"thl", "thal", 40),
+                    new WordPatterns(@"ght", "t", 60),
+                    new WordPatterns(@"[aieou]t\b", "d", 50),
+                    new WordPatterns(@"s\b", "z", 25)
                 }
             },
 
             new Profile {
+                Id = Guid.Parse("54f78c37-712b-4d5a-a2fe-e459e06a4da7"),
                 Label = "UwU",
                 Readonly = true,
                 SentenceEndingEnabled = true,
@@ -181,6 +199,17 @@ It is only right that I should take your realm. For none among you has the power
             },
 
             new Profile {
+                Id = Guid.Parse("c6f70987-1222-46c7-b1a7-70886fd87f74"),
+                Label = "Meow meow",
+                Readonly = true,
+                CompelledSpeechEnabled = true,
+                CompelledSpeechWords = {
+                    "meow"
+                }
+            },
+
+            new Profile {
+                Id = Guid.Parse("9de490a1-8a76-4391-b346-ac067c8cac11"),
                 Label = "Mute",
                 Readonly = true,
                 MuteEnabled = true
@@ -188,12 +217,21 @@ It is only right that I should take your realm. For none among you has the power
         };
         return profiles;
     }
+
     internal void CreateNewProfile()
     {
         Plugin.Log.Debug($"Attempting to create Profile");
         var newpf = new Profile();
-        newpf.Label = "New Profile" + Profiles.FindAll(p => p.Label.StartsWith(newpf.Label)).Count;
-        Profiles.Add(newpf);
+        int count = 0;
+        foreach (var p in Profiles)
+        {
+            if (p.Label.StartsWith("New Profile"))
+            {
+                count++;
+            }
+        }
+        newpf.Label = count == 0 ? "New Profile" : $"New Profile {count}";
+        CustomProfiles.Add(newpf);
         SetActiveProfile(newpf.Id);
         Save();
     }
@@ -202,9 +240,18 @@ It is only right that I should take your realm. For none among you has the power
     {
         Plugin.Log.Debug($"Making a new copy of {id}");
         var newpf = ActiveProfile.DeepCopy();
-        var count = Profiles.FindAll(p => p.Label.StartsWith(newpf.Label)).Count;
-        newpf.Label = newpf.Label + "(copy " + count + ")";
-        Profiles.Add(newpf);
+        int count = 0;
+        foreach (var p in Profiles)
+        {
+            newpf.Label = Regex.Replace(newpf.Label, @"\(copy \d*\)", "").Trim();
+            if (p.Label.StartsWith(newpf.Label))
+            {
+                count++;
+            }
+        }
+
+        newpf.Label = $"{newpf.Label} (copy {count})";
+        CustomProfiles.Add(newpf);
         SetActiveProfile(newpf.Id);
         Save();
     }
@@ -213,31 +260,51 @@ It is only right that I should take your realm. For none among you has the power
     {
         if (ActiveProfile.Readonly)
         {
-            Plugin.Log.Debug($"Attempting to delete active readonly profile");
+            Plugin.Log.Debug($"Attempting to delete built-in profile");
             return;
         }
         Plugin.Log.Debug($"Deleting active profile");
-        int to_delete = ActiveProfileIndex;
-        SetActiveProfile(Profiles[0].Id);
-        Profiles.RemoveAt(to_delete);
+        var to_delete = CustomProfiles.Find(profile => profile.Id.Equals(ActiveProfileId));
+        if (to_delete == null)
+        {
+            Plugin.Log.Debug($"Something went terribly wrong with this configuration because the active profile is already deleted");
+        }
+        else
+        {
+            CustomProfiles.Remove(to_delete);
+        }
+        SetActiveProfile(BuiltInProfiles[0].Id);
         Save();
     }
 
     internal void SetActiveProfile(Guid id)
     {
         Plugin.Log.Debug($"Attempting to set {id}");
-        var p = Profiles.Find(v => v.Id.Equals(id));
-        if (p != null)
+        foreach (var p in Profiles)
         {
-            this.ActiveProfileId = id;
-            Plugin.Log.Debug($"Found and setting {this.ActiveProfileId} as ActiveProfileId");
+            if (p.Id.Equals(id))
+            {
+                this.ActiveProfileId = id;
+                Plugin.Log.Debug($"Found and setting {this.ActiveProfileId} as ActiveProfileId");
+            }
         }
     }
 
+    // Returns the profiles from each set as an enumerable for those operations.
+    public IEnumerable<Profile> GetProfiles()
+    {
+        foreach (var profile in BuiltInProfiles)
+        {
+            yield return profile;
+        }
+        foreach (var custom in CustomProfiles)
+        {
+            yield return custom;
+        }
+    }
     public Configuration()
     {
-        if (this.Profiles.Count > 0)
-            this.ActiveProfileId = this.Profiles[0].Id;
+        this.ActiveProfileId = this.BuiltInProfiles[0].Id;
     }
 }
 
@@ -307,9 +374,8 @@ public class Profile
     /// Creates a new profile from itself.
     public Profile DeepCopy()
     {
-        // Hackily serializes to json and back in order to make a full "deep copy" of the profile
-        // This is low effort, low maintenance and -- while lower performance -- it's not going to be used enough to justify
-        // A huge amoutn of effort
+        // Serializes to json and back in order to make a full "deep copy" of the profile
+        // This is low effort, low maintenance and -- while lower performance -- it's not going to be used enough to justify anything more.
         string jsonprofile = JsonConvert.SerializeObject(this);
         if (jsonprofile == null)
         {
@@ -317,7 +383,6 @@ public class Profile
         }
         Profile newprofile = JsonConvert.DeserializeObject<Profile>(jsonprofile!) ?? new Profile();
         newprofile.Id = Guid.NewGuid();
-        newprofile.Label = newprofile.Label + " Clone";
         newprofile.Readonly = false;
         Plugin.Log.Info($"Returning new profile {newprofile.Id} labeled {newprofile.Label}");
         return newprofile;
@@ -329,6 +394,7 @@ class ProfileEditor
     private string placeholderEnding = "";
     private string placeholderPattern = "";
     private string placeholderReplacement = "";
+    private int placeholderPercentage = 100;
     private string addWordReplacementKey = "";
     private string addWordReplacementValue = "";
     private string addTick = "";
@@ -536,24 +602,29 @@ class ProfileEditor
         {
             ImGui.BeginDisabled(profile.Readonly);
             ImGui.TextUnformatted($"Custom Speech Patterns (Regex Replacement)");
-            using (ImRaii.Table($"Custom Speech Patterns (Regex Replacement)##Custom Speech Patterns (Regex Replacement)list", 3))
+            using (ImRaii.Table($"Custom Speech Patterns (Regex Replacement)##Custom Speech Patterns (Regex Replacement)list", 4))
             {
                 ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed, 48);
                 ImGui.TableSetupColumn("Pattern");
                 ImGui.TableSetupColumn("Replacement");
+                ImGui.TableSetupColumn("% Chance");
                 ImGui.TableHeadersRow();
 
                 ImGui.TableNextColumn();
                 if (ImGui.Button("+##addpattern"))
                 {
-                    profile.Patterns.Add(new WordPatterns(placeholderPattern, placeholderReplacement));
+                    profile.Patterns.Add(new WordPatterns(placeholderPattern, placeholderReplacement, placeholderPercentage));
                     placeholderPattern = "";
                 }
                 ImGui.TableNextColumn();
                 ImGui.InputText("##newpattern", ref placeholderPattern, 40);
                 ImGui.TableNextColumn();
                 ImGui.InputText("##newreplacement", ref placeholderReplacement, 40);
-
+                ImGui.TableNextColumn();
+                if (ImGui.InputInt("##newpercentage", ref placeholderPercentage))
+                {
+                    placeholderPercentage = Math.Clamp(placeholderPercentage, 0, 100);
+                }
                 foreach (WordPatterns pattern in profile.Patterns)
                 {
                     ImGui.TableNextColumn();
@@ -565,6 +636,8 @@ class ProfileEditor
                     ImGui.TextUnformatted(pattern.Pattern);
                     ImGui.TableNextColumn();
                     ImGui.TextUnformatted(pattern.Replacement);
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted($"{pattern.Chance}");
                 }
             }
             ImGui.EndDisabled();

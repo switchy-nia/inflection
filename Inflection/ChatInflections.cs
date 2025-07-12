@@ -82,7 +82,6 @@ namespace Inflection
             // Simple method of ensuring all punctuation and words have a space between them, then splitting by space.
             // First we need to handle the RP tag '*', this is mostly for formatting purposes later (only one set is supported for now).
             var tokens = Regex.Replace(input, @"\*(.*)\*", "INFOPENEMOTE $1 INFCLOSEEMOTE");
-            tokens = tokens.Replace("*", "");
             tokens = punctuationRegex.Replace(tokens, @" $1 ");
             List<string> words = tokens.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 

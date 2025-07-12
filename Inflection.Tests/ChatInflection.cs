@@ -168,4 +168,20 @@ public class InflectionTest
         result = inflect.Speak("No, it is not true that natalie is a cat that says nya");
         Assert.Equal("Nyo, it is nyot true that nyatily is a cat that says nya", result);
     }
+
+    [Fact]
+    void TestSingleAsterisk()
+    {
+        var profile = new Profile
+        {
+            VoiceType = VoiceVolume.Small
+        };
+        var inflect = new Inflections(profile);
+        var result = inflect.Speak("This is a test*");
+        Assert.Equal("this is a test*", result);
+        result = inflect.Speak("This is a half test(");
+        Assert.Equal("this is a half test (", result);
+        result = inflect.Speak("This 'is a 'test");
+        Assert.Equal("This 'is a 'test", result);
+    }
 }

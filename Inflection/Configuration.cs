@@ -469,7 +469,7 @@ class ProfileEditor
             foreach (string word in words)
             {
                 ImGui.TableNextColumn();
-                if (ImGui.Button("x"))
+                if (ImGui.Button($"x##{word}"))
                 {
                     words.Remove(word);
                 }
@@ -615,6 +615,8 @@ class ProfileEditor
                 {
                     profile.Patterns.Add(new WordPatterns(placeholderPattern, placeholderReplacement, placeholderPercentage));
                     placeholderPattern = "";
+                    placeholderReplacement = "";
+                    placeholderPercentage = 100;
                 }
                 ImGui.TableNextColumn();
                 ImGui.InputText("##newpattern", ref placeholderPattern, 40);
@@ -625,13 +627,18 @@ class ProfileEditor
                 {
                     placeholderPercentage = Math.Clamp(placeholderPercentage, 0, 100);
                 }
+
+                // Hack because HashSet doesn't allow for easy enumeration.
+                // Tolerable workaround because UI is getting completely redone soon:tm:
+                int i = 0;
                 foreach (WordPatterns pattern in profile.Patterns)
                 {
                     ImGui.TableNextColumn();
-                    if (ImGui.Button($"x##patterns{pattern}"))
+                    if (ImGui.Button($"x##{profile.Id}{i}"))
                     {
                         profile.Patterns.Remove(pattern);
                     }
+                    i++;
                     ImGui.TableNextColumn();
                     ImGui.TextUnformatted(pattern.Pattern);
                     ImGui.TableNextColumn();

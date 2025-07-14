@@ -142,10 +142,6 @@ namespace Inflection
                 final = SentenceEnding(rand, final);
             }
 
-            if (profile.PatternsEnabled)
-            {
-                final = ApplyPatterns(final, rand);
-            }
             // undo the tokenization. 
             // And restore the message formatting now that we're done messing with it.
             final = Regex.Replace(final, @"([\(\[\{])\s+(\w)", "$1$2");
@@ -154,6 +150,10 @@ namespace Inflection
             final = Regex.Replace(final, @"([\w\.\!\?])\s+([\)\]\}\,\.\!\?])", "$1$2");
             final = Regex.Replace(final, @"INFOPENEMOTE\s+", "*");
             final = Regex.Replace(final, @"\s+INFCLOSEEMOTE", "*");
+            if (profile.PatternsEnabled)
+            {
+                final = ApplyPatterns(final, rand);
+            }
             // TODO: Handle quotes
             return final.Trim();
         }
@@ -284,14 +284,24 @@ namespace Inflection
         private string ApplyPatterns(string input, Random rand)
         {
             StringBuilder output = new StringBuilder(input);
+            // Essentially, just find the start index and the end index for any "RP symbols" in the string and then ignore those indexes
+            var matching_parens = Regex.Match(input, @"\(.*\)");
+            var matching_ast = Regex.Match(input, @"\*.*\*");
+            int paren_open = matching_parens.Index;
+            int paren_close = matching_parens.Index + matching_parens.Length;
+            int ast_open = matching_ast.Index;
+            int ast_close = matching_ast.Index + matching_ast.Length;
             foreach ((Regex pattern, string replacement, int chance) in patterns)
             {
                 foreach (Match match in pattern.Matches(input))
                 {
-                    if (chance == 100 || rand.Next(100) < chance)
-                    {
+                    // These checks are to determine whether the match is "between" the open and close of () or **.
+                    bool is_ooc = paren_open < match.Index && match.Index + match.Length <= paren_close;
+                    bool is_emote = ast_open < match.Index && match.Index + match.Length <= ast_close;
+
+                    // messy comparisons to check that the number is a) not between parens, b) not between asterisks, c) has met RNGesus sufficiently to be applied.
+                    if (!is_ooc && !is_emote && (chance == 100 || rand.Next(100) < chance))
                         output = output.Replace(match.Value, match.Result(replacement));
-                    }
                 }
             }
             return output.ToString();

@@ -88,7 +88,7 @@ public class InflectionTest
         var profile = new Profile
         {
             CompelledSpeechEnabled = true,
-            CompelledSpeechWords = { "test" }
+            CompelledSpeechWords = { "nottest" }
         };
         var inflection = new Inflections(profile);
         string result = inflection.Speak("*test test test test.*");
@@ -101,11 +101,24 @@ public class InflectionTest
         var profile = new Profile
         {
             CompelledSpeechEnabled = true,
-            CompelledSpeechWords = { "test" }
+            CompelledSpeechWords = { "nottest" }
         };
         var inflection = new Inflections(profile);
         string result = inflection.Speak("(test test test test.)");
         Assert.Equal("(test test test test.)", result);
+    }
+
+    [Fact]
+    public void TestOOCAndEmote()
+    {
+        var profile = new Profile
+        {
+            CompelledSpeechEnabled = true,
+            CompelledSpeechWords = { "nottest" }
+        };
+
+        var inflection = new Inflections(profile);
+        string result = inflection.Speak("test (test) test *test*");
     }
 
     [Fact]
@@ -167,6 +180,15 @@ public class InflectionTest
         inflect = new Inflections(profile);
         result = inflect.Speak("No, it is not true that natalie is a cat that says nya");
         Assert.Equal("Nyo, it is nyot true that nyatily is a cat that says nya", result);
+
+        profile = new Profile
+        {
+            PatternsEnabled = true,
+            Patterns = { new WordPatterns(@"(n)([ao])", "$1y$2"), new WordPatterns(@"alie\b", "ily") }
+        };
+        inflect = new Inflections(profile);
+        result = inflect.Speak("(No), it is *not* true that natalie is a cat that says nya");
+        Assert.Equal("(No), it is *not* true that nyatily is a cat that says nya", result);
     }
 
     [Fact]
@@ -182,6 +204,6 @@ public class InflectionTest
         result = inflect.Speak("This is a half test(");
         Assert.Equal("this is a half test (", result);
         result = inflect.Speak("This 'is a 'test");
-        Assert.Equal("This 'is a 'test", result);
+        Assert.Equal("this 'is a 'test", result);
     }
 }

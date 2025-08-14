@@ -1,6 +1,6 @@
 using Dalamud.Configuration;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using System;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -419,7 +419,7 @@ class ProfileEditor
         return changed;
     }
 
-    private bool InputText(string label, string input, uint length, Action<string> setter)
+    private bool InputText(string label, string input, int length, Action<string> setter)
     {
         var tmp = input;
         if (ImGui.InputText(label, ref tmp, length) && tmp != input)

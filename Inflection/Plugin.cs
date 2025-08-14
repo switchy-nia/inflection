@@ -1,3 +1,4 @@
+using ECommons;
 using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
@@ -9,7 +10,6 @@ using System;
 using Dalamud.Utility.Signatures;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.System.String;
-using Dalamud.Utility;
 using Dalamud.Memory;
 using System.Text.RegularExpressions;
 using System.Linq;
@@ -38,9 +38,9 @@ public sealed class Plugin : IDalamudPlugin
     public readonly WindowSystem WindowSystem = new("Aiko's Inflection");
     // private ConfigWindow ConfigWindow { get; init; }
     private MainWindow MainWindow { get; init; }
-
+    // TODO: Migrate to ECommons
     private unsafe delegate byte ProcessChatInputDelegate(IntPtr uiModule, byte** message, IntPtr a3);
-    [Signature("E8 ?? ?? ?? ?? FE 86 ?? ?? ?? ?? C7 86 ?? ?? ?? ?? ?? ?? ?? ??", DetourName = nameof(ProcessChatInputDetour), Fallibility = Fallibility.Auto)]
+    [Signature("E8 ?? ?? ?? ?? FE 87 ?? ?? ?? ?? C7 87", DetourName = nameof(ProcessChatInputDetour), Fallibility = Fallibility.Auto)]
     private Hook<ProcessChatInputDelegate> ProcessChatInputHook { get; set; } = null!;
     private readonly List<string> channelaliases = new List<string>()
     {
@@ -77,6 +77,7 @@ public sealed class Plugin : IDalamudPlugin
         // WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(MainWindow);
 
+        ECommonsMain.Init(PluginInterface, this);
         _configureCommands();
         PluginInterface.UiBuilder.Draw += DrawUI;
 
@@ -118,6 +119,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         if (!Configuration.InflectionEnabled)
         {
+            Log.Verbose($"Inflection Disabled skipping");
             return ProcessChatInputHook.Original(uiModule, message, a3);
         }
         // Put all this shit in a try-catch loop so we can catch any possible thrown exception.
@@ -231,7 +233,7 @@ public sealed class Plugin : IDalamudPlugin
 
         // ConfigWindow.Dispose();
         MainWindow.Dispose();
-
+        ECommonsMain.Dispose();
         ProcessChatInputHook?.Disable();
         ProcessChatInputHook?.Dispose();
         CommandManager.RemoveHandler(ConfigCommandName);

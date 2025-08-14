@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 
 namespace Inflection.Windows;
 

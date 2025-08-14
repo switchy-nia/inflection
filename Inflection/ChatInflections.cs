@@ -29,13 +29,14 @@ namespace Inflection
     public class Inflections
     {
         // Patterns used to parse out the tokens.
+        const string IS_DELIM_PATTERN = @"(INF_SPC|INF_TEMP_SPC)";
         const string PUNCTUATION_PATTERN = @"([\.\?\!\[\]\{\}\,\(\)]|INFOPENEMOTE|INFCLOSEEMOTE)";
         // This emoji should support the following basic text emojis
         const string EMOJI_REGEX = @"^[:;cDxX><\-\,)CP][:;><\-3)CWwdpP]*[:;cDxX><\-\,3)CWwdpP]$";
 
         Profile profile;
+        Regex delimiterRegex = new Regex(IS_DELIM_PATTERN);
         Regex punctuationRegex = new Regex(PUNCTUATION_PATTERN);
-        Regex emoji_regex = new Regex(EMOJI_REGEX);
         Regex mute_regex = new Regex(@"([\(\*].*?[\*\)])");
 
         private List<(Regex, string, int)> patterns = new List<(Regex, string, int)>();
@@ -58,11 +59,19 @@ namespace Inflection
                 profile.WordReplacementEnabled ||
                 profile.StutterEnabled ||
                 profile.SentenceStartEnabled ||
-                profile.SentenceEndingEnabled;
+                profile.SentenceEndingEnabled ||
+                profile.MuteEnabled ||
+                profile.PatternsEnabled ||
+                profile.VoiceType != VoiceVolume.Normal;
         }
         public string Speak(String input)
         {
-
+            // There is no point in attempting to modify the chat when there's no options enabled.
+            if (!SetToInflect())
+            {
+                //Plugin.Log.Debug($"Profile does not have any inflections enabled");
+                return input;
+            }
             StringBuilder output = new StringBuilder();
             Random rand = new Random();
 
@@ -81,28 +90,44 @@ namespace Inflection
             // First tokenize it.
             // Simple method of ensuring all punctuation and words have a space between them, then splitting by space.
             // First we need to handle the RP tag '*', this is mostly for formatting purposes later (only one set is supported for now).
-            var tokens = Regex.Replace(input, @"\*(.*)\*", "INFOPENEMOTE $1 INFCLOSEEMOTE");
-            tokens = punctuationRegex.Replace(tokens, @" $1 ");
-            List<string> words = tokens.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            //Plugin.Log.Debug($"{input}");
+            var tokens = Regex.Replace(input, @"\*(.*)\*", "INFOPENEMOTE$1INFCLOSEEMOTE");
+
+            //Plugin.Log.Debug($"{tokens}");
+            // for tokenization purposes space gets a special character replacement
+            tokens = Regex.Replace(tokens, " ", "INF_SPC");
+            //Plugin.Log.Debug($"{tokens}");
+            // Then punctuation gets surrounded by a special temporary token "space" for processing
+            tokens = punctuationRegex.Replace(tokens, @"INF_TEMP_SPC$1INF_TEMP_SPC");
+            //Plugin.Log.Debug($"{tokens}");
+            List<string> words = delimiterRegex.Split(tokens).ToList();
 
             Cooldown tickCooldown = new Cooldown(profile.TickCooldown);
             Cooldown stutterCooldown = new Cooldown(profile.StutterCooldown);
             bool rp_emote_chat = false;
             bool ooc_chat = false;
-
+            //Plugin.Log.Debug($"tokens {words.Count}");
             //Log.Debug($"Looping over words with {words.Count}");
             for (int i = 0; i < words.Count; i++)
             {
                 string word = words[i];
-                if (emoji_regex.IsMatch(word))
+                // For some unknown reason, it is possible for empty words to get appended to the list.
+                // Skip them entirely.
+                if (word.Length == 0)
                 {
-                    //Log.Debug($"{full_word} is an emoji, skipping");
+                    //Plugin.Log.Debug($"{word} is empty");
+                    continue;
+                }
+                // Delimiters need to be untouched so they can be undone at the end.
+                if (word.Equals("INF_SPC") || word.Equals("INF_TEMP_SPC"))
+                {
+                    //Plugin.Log.Debug($"{word} is a delimiter");
                     output.Append(word);
-                    output.Append(' ');
                     continue;
                 }
                 if (punctuationRegex.IsMatch(word))
                 {
+                    //Plugin.Log.Debug($"{word} is punctuation");
                     if (!rp_emote_chat && word.Contains("INFOPENEMOTE"))
                         rp_emote_chat = true;
                     else if (rp_emote_chat && word.Contains("INFCLOSEEMOTE"))
@@ -113,7 +138,6 @@ namespace Inflection
                         ooc_chat = false;
 
                     output.Append(handlePunctuation(word));
-                    output.Append(' ');
                     continue;
                 }
 
@@ -125,10 +149,9 @@ namespace Inflection
                 }
                 else
                 {
+                    //Plugin.Log.Debug($"{word} is processed as normal");
                     output.Append(ProcessWord(rand, word, tickCooldown, stutterCooldown));
                 }
-
-                output.Append(' ');
             }
 
             var final = output.ToString();
@@ -144,12 +167,10 @@ namespace Inflection
 
             // undo the tokenization. 
             // And restore the message formatting now that we're done messing with it.
-            final = Regex.Replace(final, @"([\(\[\{])\s+(\w)", "$1$2");
-            final = Regex.Replace(final, @"\s+([\)\]\}\,\.\!\?])", "$1");
-
-            final = Regex.Replace(final, @"([\w\.\!\?])\s+([\)\]\}\,\.\!\?])", "$1$2");
-            final = Regex.Replace(final, @"INFOPENEMOTE\s+", "*");
-            final = Regex.Replace(final, @"\s+INFCLOSEEMOTE", "*");
+            final = Regex.Replace(final, @"INFOPENEMOTE", "*");
+            final = Regex.Replace(final, @"INFCLOSEEMOTE", "*");
+            final = Regex.Replace(final, @"INF_TEMP_SPC", "");
+            final = Regex.Replace(final, @"INF_SPC", " ");
             if (profile.PatternsEnabled)
             {
                 final = ApplyPatterns(final, rand);

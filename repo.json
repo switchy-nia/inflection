@@ -1,25 +1,25 @@
 [
-    {
-        "Author": "nia",
-        "Name": "Aiko's Inflection",
-        "Punchline": "Add a little bit of involuntary flair to your chat messages <3",
-        "Description": "Allows you to set options to change up your speech to your chat messages including stutters, sentence endings, ticks, and more!",
-        "ApplicableVersion": "any",
-        "Tags": [
-            "chat-modification"
-        ],
-        "InternalName": "Inflection",
-        "AssemblyVersion": "0.0.2.0",
-        "TestingAssemblyVersion": "0.0.2.0",
-        "RepoUrl": "https://github.com/switchy-nia/inflection",
-        "DalamudApiLevel": 13,
-        "TestingDalamudApiLevel": 13,
-        "LoadPriority": 0,
-        "IsHide": false,
-        "IsTestingExclusive": false,
-        "DownloadLinkInstall": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.0/Inflection.zip",
-        "DownloadLinkTesting": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.0/Inflection.zip",
-        "DownloadLinkUpdate": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.0/Inflection.zip",
-        "LastUpdate": "1750811162"
-    }
+  {
+    "Author": "nia",
+    "Name": "Aiko's Inflection",
+    "Punchline": "Add a little bit of involuntary flair to your chat messages <3",
+    "Description": "Allows you to set options to change up your speech to your chat messages including stutters, sentence endings, ticks, and more!",
+    "ApplicableVersion": "any",
+    "Tags": [
+      "chat-modification"
+    ],
+    "InternalName": "Inflection",
+    "AssemblyVersion": "0.0.2.1",
+    "TestingAssemblyVersion": "0.0.2.1",
+    "RepoUrl": "https://github.com/switchy-nia/inflection",
+    "DalamudApiLevel": 13,
+    "TestingDalamudApiLevel": 13,
+    "LoadPriority": 0,
+    "IsHide": false,
+    "IsTestingExclusive": false,
+    "DownloadLinkInstall": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.1/Inflection.zip",
+    "DownloadLinkTesting": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.1/Inflection.zip",
+    "DownloadLinkUpdate": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.1/Inflection.zip",
+    "LastUpdate": "1750811162"
+  }
 ]

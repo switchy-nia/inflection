@@ -17,7 +17,7 @@ jobs:
         with:
           dotnet-version: '9.x.x'
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore --force-evaluate
       - name: Download Dalamud
         run: |
           Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip

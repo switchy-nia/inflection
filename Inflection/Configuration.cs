@@ -41,7 +41,7 @@ It is only right that I should take your realm. For none among you has the power
 
     public List<Profile> CustomProfiles = new List<Profile>();
 
-    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public IEnumerable<Profile> Profiles
     {
         get
@@ -50,7 +50,7 @@ It is only right that I should take your realm. For none among you has the power
         }
     }
 
-    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public Profile ActiveProfile
     {
         get
@@ -141,7 +141,36 @@ It is only right that I should take your realm. For none among you has the power
                     new WordPatterns( @"([n])([aoeu])", "$1y$2"),
                 }
             },
-
+            new Profile {
+                Id = Guid.Parse("0d4e1a14-e1f0-425c-a553-02babbc59328"),
+                Label = "Lisp",
+                Readonly = true,
+                PatternsEnabled = true,
+                Patterns = {
+                    new WordPatterns("[Ss][Hh]?", "th", 80),
+                    new WordPatterns("([^Cc])[Cc]([EI])", "$1th$2", 70),
+                }
+            },
+            new Profile {
+                Id = Guid.Parse("4e018e31-fe2f-4820-ab96-8dc29af20c49"),
+                Label = "Dweeb",
+                Readonly = true,
+                TicksEnabled = true,
+                Ticks = new HashSet<string> () {
+                    "uhh.", "umm..", "er..", "-oh umm..."
+                },
+                TickChance = 15,
+                TickCooldown = 4,
+                StutterEnabled = true,
+                StutterCooldown = 3,
+                MaxStutterSeverity = 3,
+                StutterChance = 20,
+                PatternsEnabled = true,
+                Patterns = {
+                    new WordPatterns("[Ss][Hh]?", "th", 80),
+                    new WordPatterns("^[Cc][Cc]([EI])", "th$1", 70),
+                }
+            },
             new Profile {
                 Id = Guid.Parse("2e5b4421-548f-402e-9724-9daf99c37bc0"),
                 Label = "Bimbo",
@@ -214,6 +243,52 @@ It is only right that I should take your realm. For none among you has the power
                 Readonly = true,
                 MuteEnabled = true
             },
+            new Profile {
+                Id = Guid.Parse("1d257033-f252-4195-8472-167328c2dc25"),
+                Label = "Morse Code",
+                Readonly = true,
+                PatternsEnabled = true,
+                GlobalPatterns = {
+                    ("[^a-zA-Z0-9 ]", ""),
+                    (" ", "\\ "),
+                    ("[Aa]", ".- "),
+                    ("[Bb]", "-... "),
+                    ("[Cc]", "-.-. "),
+                    ("[Dd]", "-.. "),
+                    ("[Ee]", ". "),
+                    ("[Ff]", "..-. "),
+                    ("[Gg]", "--. "),
+                    ("[Hh]", ".... "),
+                    ("[Ii]", ".. "),
+                    ("[Jj]", ".--- "),
+                    ("[Kk]", "-.- "),
+                    ("[Ll]", ".-.. "),
+                    ("[Mm]", "-- "),
+                    ("[Nn]", "-. "),
+                    ("[Oo]", "--- "),
+                    ("[Pp]", ".--. "),
+                    ("[Qq]", "--.- "),
+                    ("[Rr]", ".-. "),
+                    ("[Ss]", "... "),
+                    ("[Tt]", "- "),
+                    ("[Uu]", "..- "),
+                    ("[Vv]", "...- "),
+                    ("[Ww]", ".-- "),
+                    ("[Xx]", "-..- "),
+                    ("[Yy]", "-.-- "),
+                    ("[Zz]", "--.. "),
+                    ("0", "----- "),
+                    ("1", ".---- "),
+                    ("2", "..--- "),
+                    ("3", "...-- "),
+                    ("4", "....- "),
+                    ("5", "..... "),
+                    ("6", "-.... "),
+                    ("7", "--... "),
+                    ("8", "---.. "),
+                    ("9", "----. "),
+                }
+            }
         };
         return profiles;
     }
@@ -360,6 +435,7 @@ public class Profile
 
     public bool PatternsEnabled = false;
     public HashSet<WordPatterns> Patterns = new HashSet<WordPatterns>() { };
+    public HashSet<(string, string)> GlobalPatterns = new HashSet<(string, string)>() { };
 
     public Profile()
     {

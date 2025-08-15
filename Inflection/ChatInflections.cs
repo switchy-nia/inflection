@@ -325,7 +325,13 @@ namespace Inflection
                         output = output.Replace(match.Value, match.Result(replacement));
                 }
             }
-            return output.ToString();
+            string final = output.ToString();
+            foreach ((var pattern, var replacement) in profile.GlobalPatterns)
+            {
+                Plugin.Log.Debug($"--- Executing {pattern} replace with {replacement}");
+                final = Regex.Replace(final, pattern, replacement);
+            }
+            return final;
         }
     }
 }

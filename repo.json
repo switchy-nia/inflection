@@ -9,17 +9,17 @@
       "chat-modification"
     ],
     "InternalName": "Inflection",
-    "AssemblyVersion": "0.0.2.1",
-    "TestingAssemblyVersion": "0.0.2.1",
+    "AssemblyVersion": "0.0.2.2",
+    "TestingAssemblyVersion": "0.0.2.2",
     "RepoUrl": "https://github.com/switchy-nia/inflection",
     "DalamudApiLevel": 13,
     "TestingDalamudApiLevel": 13,
     "LoadPriority": 0,
     "IsHide": false,
     "IsTestingExclusive": false,
-    "DownloadLinkInstall": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.1/Inflection.zip",
-    "DownloadLinkTesting": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.1/Inflection.zip",
-    "DownloadLinkUpdate": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.1/Inflection.zip",
+    "DownloadLinkInstall": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.2/Inflection.zip",
+    "DownloadLinkTesting": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.2/Inflection.zip",
+    "DownloadLinkUpdate": "https://github.com/switchy-nia/inflection/releases/download/0.0.2.2/Inflection.zip",
     "LastUpdate": "1750811162"
   }
 ]

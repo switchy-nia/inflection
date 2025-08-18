@@ -319,16 +319,16 @@ namespace Inflection
                     // These checks are to determine whether the match is "between" the open and close of () or **.
                     bool is_ooc = paren_open < match.Index && match.Index + match.Length <= paren_close;
                     bool is_emote = ast_open < match.Index && match.Index + match.Length <= ast_close;
-
+                    // Plugin.Log.Debug($"Match {match.Index} {match.Length} {match.Value}, is_ooc: {is_ooc}, is_emote: {is_emote}, chance: {chance}%, replacement: {replacement}");
                     // messy comparisons to check that the number is a) not between parens, b) not between asterisks, c) has met RNGesus sufficiently to be applied.
                     if (!is_ooc && !is_emote && (chance == 100 || rand.Next(100) < chance))
-                        output = output.Replace(match.Value, match.Result(replacement));
+                        output = output.Replace(match.Value, match.Result(replacement), match.Index, match.Length);
                 }
             }
             string final = output.ToString();
             foreach ((var pattern, var replacement) in profile.GlobalPatterns)
             {
-                Plugin.Log.Debug($"--- Executing {pattern} replace with {replacement}");
+                //Plugin.Log.Debug($"--- Executing {pattern} replace with {replacement}");
                 final = Regex.Replace(final, pattern, replacement);
             }
             return final;

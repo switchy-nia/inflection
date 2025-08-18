@@ -67,9 +67,9 @@ public sealed class Plugin : IDalamudPlugin
             Configuration = new Configuration();
         }
 
-        if (Configuration.Profiles.Count() == 0)
+        if (Configuration.Profiles().Count() == 0)
         {
-            Configuration.SetActiveProfile(Configuration.Profiles.First().Id);
+            Configuration.SetActiveProfile(Configuration.Profiles().First().Id);
         }
 
         MainWindow = new MainWindow(this);
@@ -87,7 +87,7 @@ public sealed class Plugin : IDalamudPlugin
 
         // Adds another button that is doing the same but for the main ui of the plugin
         // PluginInterface.UiBuilder.OpenMainUi += ToggleMainUI;
-        speech = new Inflection.Inflections(Configuration.ActiveProfile);
+        speech = new Inflection.Inflections(Configuration.ActiveProfile());
 
         InteropProvider.InitializeFromAttributes(this);
         ProcessChatInputHook.Enable();
@@ -99,7 +99,7 @@ public sealed class Plugin : IDalamudPlugin
     public void SetActiveProfile(Guid guid)
     {
         Configuration.SetActiveProfile(guid);
-        speech = new Inflections(Configuration.ActiveProfile);
+        speech = new Inflections(Configuration.ActiveProfile());
         Configuration.Save();
     }
     private void _configureCommands()
@@ -251,7 +251,7 @@ public sealed class Plugin : IDalamudPlugin
             Log.Info($"Disabling profiles");
             // TODO: Implement a better abstraction for finding a profile. Maybe need to declare it a custom datastructure? IDK.
             // This is fine for now.
-            var id = Configuration.Profiles.ToList().Find(p => p.Label == "Empty")!.Id;
+            var id = Configuration.Profiles().ToList().Find(p => p.Label == "Empty")!.Id;
             Configuration.SetActiveProfile(id);
         }
         else
@@ -262,7 +262,7 @@ public sealed class Plugin : IDalamudPlugin
             {
                 // TODO: Implement a better abstraction for finding a profile. Maybe need to declare it a custom datastructure? IDK.
                 // This is fine for now.
-                var profile = this.Configuration.Profiles.ToList().Find(p => p.Label == args);
+                var profile = this.Configuration.Profiles().ToList().Find(p => p.Label == args);
                 profile_guid = profile != null ? profile.Id : Guid.Empty;
             }
             if (profile_guid != Guid.Empty)

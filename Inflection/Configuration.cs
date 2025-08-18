@@ -2,7 +2,8 @@ using Dalamud.Configuration;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Bindings.ImGui;
 using System;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
@@ -41,32 +42,24 @@ It is only right that I should take your realm. For none among you has the power
 
     public List<Profile> CustomProfiles = new List<Profile>();
 
-    [Newtonsoft.Json.JsonIgnore]
-    public IEnumerable<Profile> Profiles
+    public IEnumerable<Profile> Profiles()
     {
-        get
-        {
-            return this.GetProfiles();
-        }
+        return this.GetProfiles();
     }
 
-    [Newtonsoft.Json.JsonIgnore]
-    public Profile ActiveProfile
+    public Profile ActiveProfile()
     {
-        get
+        foreach (var p in Profiles())
         {
-            foreach (var p in Profiles)
-            {
 
-                if (p.Id.Equals(ActiveProfileId))
-                {
-                    return p;
-                }
+            if (p.Id.Equals(ActiveProfileId))
+            {
+                return p;
             }
-            Plugin.Log.Debug($"ProfileID {ActiveProfileId} is null returning default");
-            ActiveProfileId = BuiltInProfiles[0].Id;
-            return BuiltInProfiles[0];
         }
+        Plugin.Log.Debug($"ProfileID {ActiveProfileId} is null returning default");
+        ActiveProfileId = BuiltInProfiles[0].Id;
+        return BuiltInProfiles[0];
     }
 
     public bool Locked { get; set; } = false;
@@ -177,7 +170,7 @@ It is only right that I should take your realm. For none among you has the power
                 Readonly = true,
                 TicksEnabled = true,
                 Ticks = new HashSet<string>() {
-                    "umm", "like", "ummmm", "*giggles*", "so", "totally"
+                    "umm", "like", "ummmm", "*giggles*", "so", "sooooooooo", "totally", "♥", "♥♥♥"
                 },
                 SentenceEndingEnabled = true,
                 SentenceEndings = { "ya know ♥", "or whatever ♥", "and stuff ♥", "lol ♥" },
@@ -192,6 +185,8 @@ It is only right that I should take your realm. For none among you has the power
                     new WordPatterns(@"ces\b", "cies", 50),
                     new WordPatterns(@"ges\b", "gies", 50),
                     new WordPatterns(@"uter\b", "tuer", 25),
+                    new WordPatterns(@"m([aieou])n", "n$1m", 50),
+                    new WordPatterns(@"n([aieou])m", "m$1n", 50),
                     new WordPatterns(@"\bth(?!i)", "d", 25),
                     new WordPatterns(@"ph\B", "f", 65),
                     new WordPatterns(@"ee", "ea", 50),
@@ -203,7 +198,7 @@ It is only right that I should take your realm. For none among you has the power
                     new WordPatterns(@"thl", "thal", 40),
                     new WordPatterns(@"ght", "t", 60),
                     new WordPatterns(@"[aieou]t\b", "d", 50),
-                    new WordPatterns(@"s\b", "z", 25)
+                    new WordPatterns(@"s\b", "z", 56)
                 }
             },
 
@@ -298,7 +293,7 @@ It is only right that I should take your realm. For none among you has the power
         Plugin.Log.Debug($"Attempting to create Profile");
         var newpf = new Profile();
         int count = 0;
-        foreach (var p in Profiles)
+        foreach (var p in Profiles())
         {
             if (p.Label.StartsWith("New Profile"))
             {
@@ -314,9 +309,9 @@ It is only right that I should take your realm. For none among you has the power
     internal void CreateCopyProfile(Guid id)
     {
         Plugin.Log.Debug($"Making a new copy of {id}");
-        var newpf = ActiveProfile.DeepCopy();
+        var newpf = ActiveProfile().DeepCopy();
         int count = 0;
-        foreach (var p in Profiles)
+        foreach (var p in Profiles())
         {
             newpf.Label = Regex.Replace(newpf.Label, @"\(copy \d*\)", "").Trim();
             if (p.Label.StartsWith(newpf.Label))
@@ -333,7 +328,7 @@ It is only right that I should take your realm. For none among you has the power
 
     internal void DeleteProfile()
     {
-        if (ActiveProfile.Readonly)
+        if (ActiveProfile().Readonly)
         {
             Plugin.Log.Debug($"Attempting to delete built-in profile");
             return;
@@ -355,7 +350,7 @@ It is only right that I should take your realm. For none among you has the power
     internal void SetActiveProfile(Guid id)
     {
         Plugin.Log.Debug($"Attempting to set {id}");
-        foreach (var p in Profiles)
+        foreach (var p in Profiles())
         {
             if (p.Id.Equals(id))
             {
@@ -452,12 +447,12 @@ public class Profile
     {
         // Serializes to json and back in order to make a full "deep copy" of the profile
         // This is low effort, low maintenance and -- while lower performance -- it's not going to be used enough to justify anything more.
-        string jsonprofile = JsonConvert.SerializeObject(this);
+        string jsonprofile = JsonSerializer.Serialize(this);
         if (jsonprofile == null)
         {
             Plugin.Log.Error($"This object apparently is null, somehow???? ");
         }
-        Profile newprofile = JsonConvert.DeserializeObject<Profile>(jsonprofile!) ?? new Profile();
+        Profile newprofile = JsonSerializer.Deserialize<Profile>(jsonprofile!) ?? new Profile();
         newprofile.Id = Guid.NewGuid();
         newprofile.Readonly = false;
         Plugin.Log.Info($"Returning new profile {newprofile.Id} labeled {newprofile.Label}");

@@ -57,7 +57,7 @@ public class MainWindow : Window, IDisposable
                     plugin.Configuration.Save();
                 }
 
-                if (profileEditor.Draw(plugin.Configuration.ActiveProfile))
+                if (profileEditor.Draw(plugin.Configuration.ActiveProfile()))
                 {
                     plugin.Configuration.Save();
                 }
@@ -161,25 +161,25 @@ public class MainWindow : Window, IDisposable
             plugin.Configuration.CreateNewProfile();
         }
 
-        if (ImGui.Button($"Make a copy of '{plugin.Configuration.ActiveProfile.Label}'"))
+        if (ImGui.Button($"Make a copy of '{plugin.Configuration.ActiveProfile().Label}'"))
         {
-            Plugin.Log.Debug($"Making a new copy of {plugin.Configuration.ActiveProfile.Id}");
-            plugin.Configuration.CreateCopyProfile(plugin.Configuration.ActiveProfile.Id);
+            Plugin.Log.Debug($"Making a new copy of {plugin.Configuration.ActiveProfile().Id}");
+            plugin.Configuration.CreateCopyProfile(plugin.Configuration.ActiveProfile().Id);
         }
 
-        ImGui.BeginDisabled(plugin.Configuration.ActiveProfile.Readonly);
-        if (ImGui.Button($"Delete {plugin.Configuration.ActiveProfile.Label}"))
+        ImGui.BeginDisabled(plugin.Configuration.ActiveProfile().Readonly);
+        if (ImGui.Button($"Delete {plugin.Configuration.ActiveProfile().Label}"))
         {
-            Plugin.Log.Debug($"Deleting {plugin.Configuration.ActiveProfile.Id}");
+            Plugin.Log.Debug($"Deleting {plugin.Configuration.ActiveProfile().Id}");
             plugin.Configuration.DeleteProfile();
         }
         ImGui.EndDisabled();
 
         // profile selector
-        var label = plugin.Configuration.ActiveProfile.Label;
-        if (ImGui.BeginCombo("Profile##selector", plugin.Configuration.ActiveProfile.Label))
+        var label = plugin.Configuration.ActiveProfile().Label;
+        if (ImGui.BeginCombo("Profile##selector", plugin.Configuration.ActiveProfile().Label))
         {
-            foreach (var profile in plugin.Configuration.Profiles)
+            foreach (var profile in plugin.Configuration.Profiles())
             {
                 if (ImGui.Selectable(profile.Label, plugin.Configuration.ActiveProfileId.Equals(profile.Id)))
                 {
